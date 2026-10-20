@@ -1,0 +1,24 @@
+{
+  "name": "presupuesta-mi-web-api",
+  "version": "1.0.0",
+  "description": "API REST que calcula presupuestos de proyectos web (0613 · Desarrollo web en entorno servidor)",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "express",
+    "api",
+    "presupuesto"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}

@@ -1,0 +1,76 @@
+### Peticiones de prueba para la extensión "REST Client" de VS Code
+### (botón "Send Request" encima de cada petición). La API debe estar arrancada.
+
+@url = http://localhost:3000
+
+### Estado del servicio
+GET {{url}}/api/estado
+
+### Tarifas del servidor
+GET {{url}}/api/tarifas
+
+### Caso 1 · Landing, 1 página, sin extras → 200 · 300 €
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "landing", "paginas": 1, "formulario": false, "segundoIdioma": false }
+
+### Caso 2 · Corporativa, 4 páginas, formulario, sin segundo idioma → 200 · 830 €
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "corporativa", "paginas": 4, "formulario": true, "segundoIdioma": false }
+
+### Caso 3 · Landing, 2 páginas, ambos extras → 200 · 580 €
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "landing", "paginas": 2, "formulario": true, "segundoIdioma": true }
+
+### Caso 4 · Landing, 20 páginas, sin extras → 200 · 1.250 €
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "landing", "paginas": 20, "formulario": false, "segundoIdioma": false }
+
+### Caso 5 · paginas: 0 → 400
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "landing", "paginas": 0, "formulario": false, "segundoIdioma": false }
+
+### Caso 6 · paginas: 21 → 400
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "landing", "paginas": 21, "formulario": false, "segundoIdioma": false }
+
+### Caso 7 · paginas: 2.5 → 400
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "landing", "paginas": 2.5, "formulario": false, "segundoIdioma": false }
+
+### Caso 8 · tipo: "tienda" → 400
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "tienda", "paginas": 1, "formulario": false, "segundoIdioma": false }
+
+### Caso 9 · formulario: "false" → 400
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "landing", "paginas": 1, "formulario": "false", "segundoIdioma": false }
+
+### Extra · paginas como cadena "4" → 400
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "landing", "paginas": "4", "formulario": false, "segundoIdioma": false }
+
+### Extra · el cliente intenta imponer un total → se ignora, 200 · 300 €
+POST {{url}}/api/presupuesto
+Content-Type: application/json
+
+{ "tipo": "landing", "paginas": 1, "formulario": false, "segundoIdioma": false, "total": 1 }
