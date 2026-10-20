@@ -28,12 +28,14 @@ import {
   type RespuestaTarifas,
   type ResultadoPresupuesto,
 } from "@/lib/api"
-import { CASOS, ejecutarCaso, type Obtenido } from "@/lib/casos"
+import { CASOS, ejecutarCaso, type Caso, type Obtenido } from "@/lib/casos"
 
 const URL_API = "localhost:3000"
 
 // Tiempo mínimo que se ve el estado "Calculando…", aunque la API responda antes.
 const DURACION_MINIMA_MS = 900
+// Pausa entre casos al ejecutar las pruebas, para que se vea el progreso.
+const PAUSA_CASO_MS = 350
 
 export function Dashboard() {
   const [vista, setVista] = React.useState<Vista>("resumen")
@@ -48,6 +50,7 @@ export function Dashboard() {
 
   const [pruebas, setPruebas] = React.useState<Record<number, Obtenido>>({})
   const [ejecutando, setEjecutando] = React.useState(false)
+  const [casoEnCurso, setCasoEnCurso] = React.useState<number | null>(null)
 
   const siguienteId = React.useRef(1)
 
@@ -107,12 +110,22 @@ export function Dashboard() {
     setEstado("desconectada")
   }
 
+  async function probarCaso(caso: Caso) {
+    setCasoEnCurso(caso.caso)
+    // Igual que al calcular: una pausa mínima para que se vea avanzar caso a caso.
+    const [obtenido] = await Promise.all([
+      ejecutarCaso(caso),
+      new Promise((resolver) => setTimeout(resolver, PAUSA_CASO_MS)),
+    ])
+    setPruebas((previas) => ({ ...previas, [caso.caso]: obtenido }))
+    setCasoEnCurso(null)
+  }
+
   async function ejecutarPruebas() {
     setEjecutando(true)
     setPruebas({})
     for (const caso of CASOS) {
-      const obtenido = await ejecutarCaso(caso)
-      setPruebas((previas) => ({ ...previas, [caso.caso]: obtenido }))
+      await probarCaso(caso)
     }
     setEjecutando(false)
   }
@@ -196,7 +209,9 @@ export function Dashboard() {
               tarifas={tarifas}
               resultados={pruebas}
               ejecutando={ejecutando}
+              casoEnCurso={casoEnCurso}
               onEjecutar={ejecutarPruebas}
+              onProbarCaso={probarCaso}
             />
           )}
         </main>

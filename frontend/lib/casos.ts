@@ -13,15 +13,19 @@ const VALIDA = {
 export interface Caso {
   caso: number
   descripcion: string
-  solicitud: object
+  solicitud: Record<string, unknown>
   status: number
   total?: number
+  /** En los casos inválidos, el único campo que se ha cambiado. */
+  campo?: string
 }
 
 export interface Obtenido {
   status: number
   texto: string
   correcto: boolean
+  /** Total devuelto por el servidor (solo en respuestas 200). */
+  total?: number
 }
 
 export const CASOS: Caso[] = [
@@ -65,31 +69,36 @@ export const CASOS: Caso[] = [
   },
   {
     caso: 5,
-    descripcion: "paginas: 0",
+    descripcion: "Cero páginas",
+    campo: "paginas",
     solicitud: { ...VALIDA, paginas: 0 },
     status: 400,
   },
   {
     caso: 6,
-    descripcion: "paginas: 21",
+    descripcion: "Más de 20 páginas",
+    campo: "paginas",
     solicitud: { ...VALIDA, paginas: 21 },
     status: 400,
   },
   {
     caso: 7,
-    descripcion: "paginas: 2.5",
+    descripcion: "Páginas con decimales",
+    campo: "paginas",
     solicitud: { ...VALIDA, paginas: 2.5 },
     status: 400,
   },
   {
     caso: 8,
-    descripcion: 'tipo: "tienda"',
+    descripcion: "Tipo que no existe",
+    campo: "tipo",
     solicitud: { ...VALIDA, tipo: "tienda" },
     status: 400,
   },
   {
     caso: 9,
-    descripcion: 'formulario: "false"',
+    descripcion: "Booleano escrito como texto",
+    campo: "formulario",
     solicitud: { ...VALIDA, formulario: "false" },
     status: 400,
   },
@@ -104,7 +113,12 @@ export async function ejecutarCaso(c: Caso): Promise<Obtenido> {
       : (r.datos.detalles?.join(" ") ?? r.datos.error)
     const correcto =
       r.status === c.status && (!r.ok || r.datos.total === c.total)
-    return { status: r.status, texto, correcto }
+    return {
+      status: r.status,
+      texto,
+      correcto,
+      total: r.ok ? r.datos.total : undefined,
+    }
   } catch {
     return { status: 0, texto: "Sin conexión con la API", correcto: false }
   }

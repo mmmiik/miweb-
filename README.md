@@ -298,7 +298,7 @@ Dashboard hecho con Next.js, React y shadcn/ui que consume la API. Arranca en **
 |---|---|
 | **Resumen** | Cuatro indicadores (estado y latencia de la API, último presupuesto, solicitudes enviadas, casos del enunciado), el formulario del presupuesto, el desglose devuelto por el servidor con una barra de colores y la actividad reciente de la sesión. |
 | **Tarifas** | Las tarifas que devuelve `GET /api/tarifas` y un resumen de cómo calcula el servidor. |
-| **Pruebas** | Las dos rutas GET y un botón que ejecuta los **nueve casos** del enunciado, comparando lo esperado con lo obtenido. |
+| **Pruebas** | Un marcador (X/9 y una barra de nueve segmentos), el estado de las dos rutas GET y una tarjeta por cada uno de los **nueve casos** del enunciado, separados en válidos (200) e inválidos (400). Cada tarjeta muestra la solicitud con el campo erróneo resaltado, lo esperado y lo obtenido. Se pueden ejecutar todos seguidos o cada caso por separado. La tabla de la entrega es la de la [sección 7.1](#71-tabla-de-pruebas). |
 
 Cómo trabaja con la API:
 
