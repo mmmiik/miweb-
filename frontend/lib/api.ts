@@ -38,14 +38,17 @@ export type ResultadoPresupuesto =
   | { ok: true; status: number; datos: Presupuesto }
   | { ok: false; status: number; datos: ErrorApi }
 
-export async function obtenerEstado(): Promise<boolean> {
+/** Consulta GET /api/estado y mide cuánto tarda en responder. */
+export async function obtenerEstado(): Promise<{ ok: boolean; ms: number }> {
+  const inicio = performance.now()
   try {
     const res = await fetch("/api/estado", { cache: "no-store" })
-    if (!res.ok) return false
+    const ms = Math.round(performance.now() - inicio)
+    if (!res.ok) return { ok: false, ms }
     const datos = await res.json()
-    return datos.status === "ok"
+    return { ok: datos.status === "ok", ms }
   } catch {
-    return false
+    return { ok: false, ms: Math.round(performance.now() - inicio) }
   }
 }
 

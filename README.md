@@ -292,12 +292,20 @@ Resultado obtenido:
 
 ## 8. Interfaz React (frontend)
 
-Formulario hecho con Next.js, React y shadcn/ui que:
+Dashboard hecho con Next.js, React y shadcn/ui que consume la API. Arranca en **modo oscuro** y se puede cambiar a claro con el botón de la esquina superior derecha o con la tecla `d`. Tiene tres secciones en la barra lateral (pestañas en móvil):
 
-- comprueba `GET /api/estado` y muestra si la API está conectada;
-- muestra los precios que devuelve `GET /api/tarifas` (no hay precios escritos en el cliente);
-- envía `POST /api/presupuesto` con `Content-Type: application/json` y enseña el **desglose devuelto por el servidor** o los **errores 400** que devuelve. El cliente no calcula nada. El campo de páginas deja escribir valores fuera de rango (0, 25, 2.5…) para ver cómo responde el servidor;
-- incluye un **banco de pruebas** que ejecuta los nueve casos del enunciado y compara lo esperado con lo obtenido.
+| Sección | Qué muestra |
+|---|---|
+| **Resumen** | Cuatro indicadores (estado y latencia de la API, último presupuesto, solicitudes enviadas, casos del enunciado), el formulario del presupuesto, el desglose devuelto por el servidor con una barra de colores y la actividad reciente de la sesión. |
+| **Tarifas** | Las tarifas que devuelve `GET /api/tarifas` y un resumen de cómo calcula el servidor. |
+| **Pruebas** | Las dos rutas GET y un botón que ejecuta los **nueve casos** del enunciado, comparando lo esperado con lo obtenido. |
+
+Cómo trabaja con la API:
+
+- comprueba `GET /api/estado` al abrir y muestra si la API está conectada y cuánto tarda en responder;
+- los precios que se ven vienen de `GET /api/tarifas` (no hay precios escritos en el cliente);
+- envía `POST /api/presupuesto` con `Content-Type: application/json` y enseña el **desglose devuelto por el servidor** o los **errores 400**. El cliente no valida ni calcula nada: el campo de páginas deja escribir valores fuera de rango (0, 25, 2.5…) para ver cómo responde el servidor;
+- la actividad reciente vive solo en la memoria de la página (se pierde al recargar). Los presupuestos no se guardan en ninguna base de datos.
 
 **Ejecución** (con la API ya arrancada en otra terminal):
 
@@ -310,5 +318,3 @@ npm run dev
 Abrir **http://localhost:3001**.
 
 El frontend usa el puerto **3001** porque el 3000 es de la API. Next.js reenvía las peticiones `/api/*` a `http://localhost:3000` (rewrites en [frontend/next.config.ts](frontend/next.config.ts)), así que no hace falta CORS. Si la API está en otra URL: `API_URL=http://localhost:4000 npm run dev`.
-
-En la interfaz, la tecla `d` alterna entre modo claro y oscuro.
