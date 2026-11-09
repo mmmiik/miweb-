@@ -1,10 +1,11 @@
 import express from 'express';
 import { TARIFAS, MONEDA } from './tarifas.js';
-import { validarSolicitud, validarSeleccion, validarPropuesta } from './validacion.js';
+import { validarSolicitud, validarSeleccion, validarPropuesta, validarPdf } from './validacion.js';
 import { calcularPresupuesto, calcularSeleccion } from './presupuesto.js';
 import { catalogoPublico } from './catalogo.js';
 import { proponerServicios } from './ia/proponer.js';
 import { ErrorIA } from './ia/errores.js';
+import { generarPdf } from './pdf/generar.js';
 
 function exigirJson(req, res, next) {
   if (!req.is('application/json')) {
@@ -66,6 +67,32 @@ export function crearApp({ clienteIA, timeoutIA } = {}) {
       return res.status(400).json({ error: 'Solicitud no válida', detalles: resultado.errores });
     }
     res.status(200).json(calcularSeleccion(resultado.datos));
+  });
+
+  // POST /api/presupuesto/pdf → PDF del presupuesto. El servidor RECALCULA los importes a
+  // partir de los ids y pone él mismo la fecha y el número: no se lee ninguna cifra del cuerpo.
+  app.post('/api/presupuesto/pdf', exigirJson, async (req, res, next) => {
+    const resultado = validarPdf(req.body);
+    if (!resultado.ok) {
+      return res.status(400).json({ error: 'Solicitud no válida', detalles: resultado.errores });
+    }
+    try {
+      const { buffer, numero } = await generarPdf(resultado.datos);
+      res
+        .status(200)
+        .set({
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="${numero}.pdf"`,
+          'Content-Length': String(buffer.length),
+          'Cache-Control': 'no-store',
+          'X-Presupuesto-Numero': numero,
+          'Access-Control-Expose-Headers': 'X-Presupuesto-Numero, Content-Disposition',
+        })
+        .send(buffer);
+    } catch (err) {
+      console.error('Error al generar el PDF:', err);
+      next(err);
+    }
   });
 
   // POST /api/propuesta → la IA propone servicios del catálogo (sin importes).

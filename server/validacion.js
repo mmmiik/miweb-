@@ -148,3 +148,49 @@ export function validarPropuesta(cuerpo) {
 
   return errores.length > 0 ? { ok: false, errores } : { ok: true, datos: { cliente, descripcion } };
 }
+
+export const RESUMEN_MAX = 1000;
+export const PENDIENTES_MAX = 10;
+export const PENDIENTE_MAX = 300;
+
+/**
+ * Valida POST /api/presupuesto/pdf. Los importes que pudieran venir en el cuerpo
+ * no se leen: solo cliente, resumen, ids de servicios, paginas y pendientes.
+ * @param {unknown} cuerpo
+ */
+export function validarPdf(cuerpo) {
+  if (typeof cuerpo !== 'object' || cuerpo === null || Array.isArray(cuerpo)) {
+    return { ok: false, errores: ['El cuerpo de la solicitud debe ser un objeto JSON.'] };
+  }
+  const errores = [];
+
+  const cliente = typeof cuerpo.cliente === 'string' ? cuerpo.cliente.trim() : '';
+  if (cliente === '') errores.push('Indica el nombre del cliente o empresa.');
+  else if (cliente.length > CLIENTE_MAX) errores.push(`El nombre del cliente no puede superar los ${CLIENTE_MAX} caracteres.`);
+
+  let resumen = '';
+  if (cuerpo.resumen !== undefined && cuerpo.resumen !== null) {
+    if (typeof cuerpo.resumen !== 'string') errores.push('"resumen" debe ser un texto.');
+    else if (cuerpo.resumen.trim().length > RESUMEN_MAX) errores.push(`"resumen" no puede superar los ${RESUMEN_MAX} caracteres.`);
+    else resumen = cuerpo.resumen.trim();
+  }
+
+  const pendientes = [];
+  if (cuerpo.pendientes !== undefined && cuerpo.pendientes !== null) {
+    if (!Array.isArray(cuerpo.pendientes)) errores.push('"pendientes" debe ser una lista de textos.');
+    else if (cuerpo.pendientes.length > PENDIENTES_MAX) errores.push(`"pendientes" no puede tener más de ${PENDIENTES_MAX} elementos.`);
+    else {
+      for (const p of cuerpo.pendientes) {
+        if (typeof p !== 'string') errores.push('Cada elemento de "pendientes" debe ser un texto.');
+        else if (p.trim().length > PENDIENTE_MAX) errores.push(`Cada aspecto pendiente puede tener como máximo ${PENDIENTE_MAX} caracteres.`);
+        else if (p.trim() !== '') pendientes.push(p.trim());
+      }
+    }
+  }
+
+  const seleccion = validarSeleccion({ servicios: cuerpo.servicios, paginas: cuerpo.paginas });
+  if (!seleccion.ok) errores.push(...seleccion.errores);
+
+  if (errores.length > 0) return { ok: false, errores };
+  return { ok: true, datos: { cliente, resumen, pendientes, ...seleccion.datos } };
+}
