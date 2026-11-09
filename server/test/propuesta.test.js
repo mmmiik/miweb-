@@ -1,7 +1,7 @@
 // Pruebas de POST /api/propuesta con un cliente de OpenAI simulado (sin red, sin clave).
 // Cada escenario envía una descripción, el "modelo" responde lo que decide el test y se
 // comprueba lo que la API devuelve al cliente.
-import { test, before, after } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { crearApp } from '../app.js';
 import { DESCRIPCION_MAX } from '../validacion.js';

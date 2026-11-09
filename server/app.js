@@ -122,6 +122,8 @@ export function crearApp({ clienteIA, timeoutIA } = {}) {
   });
 
   // Manejo de errores: JSON mal formado → 400 en JSON (en lugar de la página HTML de Express).
+  // Express reconoce un manejador de errores por sus 4 parámetros: "next" debe estar aunque no se use.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err, req, res, next) => {
     if (err.type === 'entity.parse.failed') {
       return res.status(400).json({

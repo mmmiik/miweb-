@@ -1,6 +1,6 @@
 "use client"
 
-import { Moon, Sun } from "lucide-react"
+import { MoonIcon, SunIcon } from "@phosphor-icons/react"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
@@ -17,8 +17,8 @@ export function ThemeToggle() {
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
       {/* Ambos iconos van en el HTML y el CSS elige cuál se ve: sin parpadeo al cargar. */}
-      <Sun className="dark:hidden" />
-      <Moon className="hidden dark:block" />
+      <SunIcon weight="bold" aria-hidden className="size-4 dark:hidden" />
+      <MoonIcon weight="bold" aria-hidden className="hidden size-4 dark:block" />
     </Button>
   )
 }

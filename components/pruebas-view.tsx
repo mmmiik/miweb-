@@ -1,17 +1,17 @@
 import {
-  CircleCheck,
-  CircleX,
-  LoaderCircle,
-  Play,
-  RotateCcw,
-} from "lucide-react"
+  ArrowCounterClockwiseIcon,
+  CheckCircleIcon,
+  PlayIcon,
+  SpinnerGapIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react"
 
-import type { EstadoConexion } from "@/components/dashboard/tipos"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { formatearEuros, type RespuestaTarifas } from "@/lib/api"
 import { CASOS, type Caso, type Obtenido } from "@/lib/casos"
 import { cn } from "@/lib/utils"
+
+type EstadoConexion = "comprobando" | "conectada" | "desconectada"
 
 interface Props {
   estado: EstadoConexion
@@ -142,7 +142,7 @@ function Marcador({
           : `${hechos} de ${CASOS.length} ejecutados`
 
   return (
-    <Card className="gap-0 py-0">
+    <div className="vidrio overflow-hidden rounded-2xl">
       <div className="grid gap-6 p-5 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
         {/* Contador grande */}
         <div className="flex items-baseline gap-1">
@@ -171,7 +171,7 @@ function Marcador({
                 key={i}
                 className={cn(
                   "h-2.5 flex-1 rounded-full transition-colors duration-300",
-                  e === "pendiente" && "bg-muted",
+                  e === "pendiente" && "bg-black/10 dark:bg-white/15",
                   e === "en-curso" &&
                     "animate-pulse bg-primary motion-reduce:animate-none",
                   e === "correcto" && "bg-emerald-500",
@@ -184,9 +184,9 @@ function Marcador({
             {rutas.map((r) => (
               <li key={r.ruta} className="flex items-center gap-1.5">
                 {r.ok ? (
-                  <CircleCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <CheckCircleIcon weight="fill" aria-hidden className="size-4 text-emerald-600 dark:text-emerald-400" />
                 ) : (
-                  <CircleX className="size-3.5 text-destructive" />
+                  <XCircleIcon weight="fill" aria-hidden className="size-4 text-destructive" />
                 )}
                 <code className="font-mono font-medium text-foreground">
                   {r.ruta}
@@ -204,11 +204,11 @@ function Marcador({
           className="h-10 px-4"
         >
           {ejecutando ? (
-            <LoaderCircle className="animate-spin" />
+            <SpinnerGapIcon weight="bold" aria-hidden className="animate-spin" />
           ) : hechos > 0 ? (
-            <RotateCcw />
+            <ArrowCounterClockwiseIcon weight="bold" aria-hidden />
           ) : (
-            <Play />
+            <PlayIcon weight="fill" aria-hidden />
           )}
           {ejecutando
             ? "Ejecutando…"
@@ -217,7 +217,7 @@ function Marcador({
               : "Ejecutar los 9 casos"}
         </Button>
       </div>
-    </Card>
+    </div>
   )
 }
 
@@ -237,7 +237,7 @@ function Grupo({
   return (
     <section className="flex flex-col gap-3">
       <div>
-        <h2 className="text-sm font-semibold">{titulo}</h2>
+        <h2 className="texto-encabezado">{titulo}</h2>
         <p className="text-sm text-muted-foreground">{descripcion}</p>
       </div>
       <div className={cn("grid gap-4", className)}>{children}</div>
@@ -261,10 +261,10 @@ function TarjetaCaso({
   return (
     <article
       className={cn(
-        "flex flex-col gap-4 rounded-xl border bg-card p-4 transition-all duration-300",
+        "vidrio flex flex-col gap-4 rounded-2xl p-4 transition-all duration-300",
         estado === "en-curso" && "border-primary ring-3 ring-primary/25",
-        estado === "correcto" && "border-emerald-500/50 bg-emerald-500/5",
-        estado === "fallo" && "border-destructive/60 bg-destructive/5"
+        estado === "correcto" && "border-emerald-500/40 bg-emerald-500/10",
+        estado === "fallo" && "border-red-500/40 bg-red-500/10"
       )}
     >
       {/* Cabecera: número, título y botón */}
@@ -286,16 +286,16 @@ function TarjetaCaso({
         </div>
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           onClick={onProbar}
           disabled={bloqueado}
           aria-label={`Probar el caso ${caso.caso}`}
           title={`Probar solo el caso ${caso.caso}`}
         >
           {estado === "en-curso" ? (
-            <LoaderCircle className="animate-spin" />
+            <SpinnerGapIcon weight="bold" aria-hidden className="animate-spin" />
           ) : (
-            <Play />
+            <PlayIcon weight="fill" aria-hidden />
           )}
         </Button>
       </header>
@@ -343,9 +343,9 @@ function TarjetaCaso({
               )}
             >
               {obtenido.correcto ? (
-                <CircleCheck className="size-4" />
+                <CheckCircleIcon weight="fill" aria-hidden className="size-4" />
               ) : (
-                <CircleX className="size-4" />
+                <XCircleIcon weight="fill" aria-hidden className="size-4" />
               )}
               {obtenido.status || "—"}
               {obtenido.total !== undefined && (
