@@ -10,9 +10,10 @@ const RippleGrid = dynamic(() => import("@/components/RippleGrid"), { ssr: false
 const subscribe = () => () => {}
 
 /**
- * Fondo de TODA la página: la rejilla de ondas de React Bits (en el azul de acento) sobre unas
- * manchas difuminadas muy tenues. Va fija detrás del contenido; reacciona al ratón y al clic
- * en cualquier sección y da al vidrio algo que desenfocar.
+ * Fondo de TODA la página: la rejilla de React Bits (en el azul de acento) sobre unas manchas
+ * difuminadas muy tenues. Va fija detrás del contenido y es ESTÁTICA: no reacciona al ratón ni
+ * al clic, no lanza ondas y, una vez dibujada, no gasta GPU (solo se redibuja al cambiar el
+ * tamaño de la ventana o el tema). Da al vidrio algo que desenfocar.
  */
 export function FondoPagina() {
   const { resolvedTheme } = useTheme()
@@ -30,20 +31,26 @@ export function FondoPagina() {
       <div className="absolute -bottom-48 left-1/4 size-[32rem] rounded-full bg-zinc-400/15 blur-3xl dark:bg-zinc-500/10" />
 
       {cliente && (
-        <RippleGrid
-          key={claro ? "claro" : "oscuro"}
-          color="#3b82f6"
-          lightMode={claro}
-          variant="lines"
-          cellSize={48}
-          lineWidth={1}
-          glow={claro ? 0.45 : 0.65}
-          autoRipple="none"
-          rippleStrength={1}
-          fade={0.3}
-          opacity={claro ? 0.55 : 0.8}
-          dpr={1}
-        />
+        // Aparece con un fundido suave para que no «salte» al cargar.
+        <div className="absolute inset-0 animate-in fade-in-0 duration-1000">
+          <RippleGrid
+            key={claro ? "claro" : "oscuro"}
+            color="#3b82f6"
+            lightMode={claro}
+            variant="lines"
+            cellSize={56}
+            lineWidth={1}
+            glow={claro ? 0.35 : 0.55}
+            fade={0.3}
+            opacity={claro ? 0.5 : 0.7}
+            // Fija: sin interacción, sin ondas automáticas, sin animación de entrada y en pausa.
+            mouseInteraction={false}
+            clickRipple={false}
+            autoRipple="none"
+            intro={false}
+            paused
+          />
+        </div>
       )}
     </div>
   )
