@@ -1,126 +1,122 @@
 "use client"
 
-import * as React from "react"
-import dynamic from "next/dynamic"
-import {
-  ArrowRightIcon,
-  ChartBarIcon,
-  DownloadSimpleIcon,
-  SparkleIcon,
-  ListChecksIcon,
-} from "@phosphor-icons/react"
-import { useTheme } from "next-themes"
+import { ArrowDownIcon, ArrowRightIcon, ChartBarIcon, SparkleIcon } from "@phosphor-icons/react"
 
+import { Escalera } from "@/components/escalera"
 import { Button } from "@/components/ui/button"
 
-// El fondo usa WebGL: solo se carga en el navegador y no pesa en el resto de secciones.
-const RippleGrid = dynamic(() => import("@/components/RippleGrid"), { ssr: false })
-
-const PASOS = [
-  {
-    Icono: SparkleIcon,
-    titulo: "Cuéntanos tu idea",
-    texto: "Nombre de tu página y de qué va. Puedes empezar con un ejemplo.",
-  },
-  {
-    Icono: ListChecksIcon,
-    titulo: "Elige tus servicios",
-    texto: "El asistente sugiere lo que encaja y tú añades lo que quieras.",
-  },
-  {
-    Icono: DownloadSimpleIcon,
-    titulo: "Descarga tu presupuesto",
-    texto: "PDF con el desglose de cada importe, calculado por el servidor.",
-  },
-] as const
-
-const subscribe = () => () => {}
-
-/** Portada: hero con la rejilla de ondas de fondo, dos accesos y el resumen del recorrido. */
+/**
+ * Portada. El hero no lleva fondo propio: el fondo de toda la página es la rejilla de ondas
+ * (ver FondoPagina). Titular con tres pesos y tamaños de Geist, y debajo la escalera de pasos.
+ */
 export function Portada({
   onEmpezar,
   onVerPanel,
+  onVerCatalogo,
 }: {
   onEmpezar: () => void
   onVerPanel: () => void
+  onVerCatalogo: () => void
 }) {
-  const { resolvedTheme } = useTheme()
-  // El tema solo se conoce en el navegador: hasta entonces no se pinta la rejilla (evita parpadeos).
-  const cliente = React.useSyncExternalStore(subscribe, () => true, () => false)
-  const claro = resolvedTheme !== "dark"
+  // Entrada escalonada del hero (fundido + subida suave).
+  const entra = "animate-in fade-in-0 slide-in-from-bottom-6 duration-700 fill-mode-both"
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6">
-      <section className="vidrio relative isolate overflow-hidden rounded-[2rem]">
-        {/* Fondo: rejilla de ondas en el azul de acento */}
-        <div aria-hidden className="absolute inset-0 -z-10">
-          {cliente && (
-            <RippleGrid
-              key={claro ? "claro" : "oscuro"}
-              color="#3b82f6"
-              lightMode={claro}
-              variant="lines"
-              cellSize={44}
-              lineWidth={1}
-              glow={claro ? 0.5 : 0.7}
-              autoRipple="none"
-              rippleStrength={1}
-              fade={0.65}
-              opacity={claro ? 0.7 : 0.9}
-            />
-          )}
-        </div>
+    <div className="mx-auto w-full max-w-6xl space-y-24 sm:space-y-32">
+      <section className="relative flex min-h-[calc(100svh-9rem)] flex-col items-center justify-center gap-7 py-10 text-center">
+        <span
+          className={`${entra} inline-flex min-h-8 items-center gap-2 rounded-full border border-black/10 bg-white/60 px-3.5 font-mono text-[0.6875rem] font-medium tracking-widest text-muted-foreground uppercase backdrop-blur dark:border-white/10 dark:bg-white/5`}
+        >
+          <SparkleIcon weight="fill" className="size-3.5 text-primary" aria-hidden />
+          Presupuestos web con IA
+        </span>
 
-        <div className="mx-auto flex min-h-[32rem] max-w-3xl flex-col items-center justify-center gap-6 px-6 py-16 text-center sm:min-h-[36rem] sm:py-20">
-          <span className="inline-flex min-h-8 items-center gap-2 rounded-full border border-black/10 bg-white/60 px-3 text-xs font-medium text-muted-foreground dark:border-white/10 dark:bg-white/5">
-            <SparkleIcon weight="fill" className="size-3.5 text-primary" aria-hidden />
-            La IA propone · el servidor calcula
+        <h1 className="flex flex-col items-center leading-[0.9] tracking-tighter">
+          <span
+            style={{ animationDelay: "100ms" }}
+            className={`${entra} text-5xl font-extralight text-foreground/70 sm:text-7xl`}
+          >
+            Tu idea
           </span>
+          <span
+            style={{ animationDelay: "220ms" }}
+            className={`${entra} mt-1 text-6xl font-extrabold sm:text-8xl`}
+          >
+            ya tiene
+          </span>
+          <span
+            style={{ animationDelay: "340ms" }}
+            className={`${entra} relative mt-1 inline-block text-7xl font-black text-primary sm:text-[9.5rem]`}
+          >
+            precio.
+            {/* Subrayado que se dibuja solo */}
+            <svg
+              viewBox="0 0 300 18"
+              preserveAspectRatio="none"
+              aria-hidden
+              className="absolute -bottom-1 left-0 h-3 w-full text-primary sm:-bottom-2 sm:h-5"
+            >
+              <path
+                d="M4 12 C 60 2, 110 18, 160 9 S 260 4, 296 11"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="5"
+                strokeLinecap="round"
+                pathLength={1}
+                strokeDasharray={1}
+                className="animate-trazo"
+              />
+            </svg>
+          </span>
+        </h1>
 
-          <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
-            Tu web, presupuestada con claridad
-          </h1>
+        <p
+          style={{ animationDelay: "520ms" }}
+          className={`${entra} flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1 text-xl tracking-tight sm:text-3xl`}
+        >
+          <span className="font-light text-muted-foreground">La IA propone.</span>
+          <span className="font-semibold">Tú eliges.</span>
+          <span className="font-black">El servidor hace las cuentas.</span>
+        </p>
 
-          <p className="max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
-            Cuéntanos tu idea y un asistente te sugiere los servicios que encajan. Tú eliges y el
-            servidor calcula cada importe: sin sorpresas y con un PDF que explica de dónde sale
-            todo.
-          </p>
+        <p
+          style={{ animationDelay: "620ms" }}
+          className={`${entra} max-w-xl text-pretty text-base text-muted-foreground sm:text-lg`}
+        >
+          Cuéntanos tu proyecto con tus palabras y llévate un presupuesto en PDF con el desglose
+          de cada importe. Sin registro y sin sorpresas.
+        </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <Button size="lg" onClick={onEmpezar}>
-              Empezar con el asistente
-              <ArrowRightIcon weight="bold" aria-hidden />
-            </Button>
-            <Button size="lg" variant="outline" onClick={onVerPanel}>
-              <ChartBarIcon weight="bold" aria-hidden />
-              Ver el panel
-            </Button>
-          </div>
+        <div
+          style={{ animationDelay: "720ms" }}
+          className={`${entra} flex flex-wrap items-center justify-center gap-3 pt-1`}
+        >
+          <Button size="lg" onClick={onEmpezar} className="h-14 rounded-2xl px-7 text-base font-semibold">
+            Empezar con el asistente
+            <ArrowRightIcon weight="bold" aria-hidden />
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={onVerPanel}
+            className="h-14 rounded-2xl px-6 text-base"
+          >
+            <ChartBarIcon weight="bold" aria-hidden />
+            Ver el panel
+          </Button>
         </div>
+
+        <a
+          href="#como-funciona"
+          style={{ animationDelay: "900ms" }}
+          className={`${entra} foco absolute bottom-0 flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-muted-foreground hover:text-foreground`}
+        >
+          Descubre cómo funciona
+          <ArrowDownIcon weight="bold" className="size-4 animate-rebote" aria-hidden />
+        </a>
       </section>
 
-      <section aria-labelledby="como-funciona" className="space-y-3">
-        <h2 id="como-funciona" className="texto-seccion px-1">
-          Cómo funciona
-        </h2>
-        <ol className="grid gap-4 md:grid-cols-3">
-          {PASOS.map(({ Icono, titulo, texto }, i) => (
-            <li key={titulo} className="vidrio flex gap-4 rounded-2xl p-5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Icono weight="bold" className="size-5" aria-hidden />
-              </span>
-              <div className="min-w-0 space-y-1">
-                <p className="texto-encabezado">
-                  <span className="mr-1.5 text-muted-foreground tabular-nums">{i + 1}.</span>
-                  {titulo}
-                </p>
-                <p className="text-sm text-muted-foreground">{texto}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <Escalera onEmpezar={onEmpezar} onVerCatalogo={onVerCatalogo} onVerPanel={onVerPanel} />
     </div>
   )
 }

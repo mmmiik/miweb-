@@ -5,12 +5,12 @@ import {
   ChartBarIcon,
   FlaskIcon,
   HouseIcon,
-  ReceiptIcon,
   SparkleIcon,
   TagIcon,
 } from "@phosphor-icons/react"
 
 import { CatalogoView } from "@/components/catalogo-view"
+import { Logo } from "@/components/logo"
 import { Portada } from "@/components/portada"
 import { PanelView } from "@/components/panel/panel-view"
 import { Flujo } from "@/components/presupuesto/flujo"
@@ -56,7 +56,7 @@ export function AppShell() {
   }, [comprobar])
 
   return (
-    <div className="min-h-svh">
+    <div className="min-h-svh overflow-x-clip">
       <header className="sticky top-0 z-20 px-3 pt-3 sm:px-6 sm:pt-4">
         <div className="vidrio mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl px-3 py-2 sm:px-4">
           <button
@@ -65,10 +65,11 @@ export function AppShell() {
             aria-label="Presupuesta mi web, ir al inicio"
             className="foco -ml-1 hidden min-h-11 items-center gap-2.5 rounded-xl px-1 sm:flex"
           >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <ReceiptIcon weight="bold" className="size-4" aria-hidden />
+            <Logo conTexto={false} />
+            <span className="hidden text-[0.9375rem] leading-none tracking-tight lg:block">
+              <span className="font-extrabold">Presupuesta</span>
+              <span className="ml-1 font-light text-primary">mi web</span>
             </span>
-            <span className="texto-encabezado hidden lg:block">Presupuesta mi web</span>
           </button>
 
           <nav
@@ -124,7 +125,11 @@ export function AppShell() {
 
       <main className="px-4 py-8 sm:px-6 sm:py-10">
         {vista === "inicio" && (
-          <Portada onEmpezar={() => irA("asistente")} onVerPanel={() => irA("panel")} />
+          <Portada
+            onEmpezar={() => irA("asistente")}
+            onVerPanel={() => irA("panel")}
+            onVerCatalogo={() => irA("catalogo")}
+          />
         )}
         {/* El flujo se mantiene montado para no perder lo escrito al cambiar de sección. */}
         <div hidden={vista !== "asistente"}>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Geist } from "next/font/google"
+import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
 import { FondoPagina } from "@/components/fondo-pagina"
@@ -12,10 +12,15 @@ export const metadata: Metadata = {
     "Describe tu proyecto, revisa los servicios que te proponemos y descarga tu presupuesto en PDF.",
 }
 
+// Geist como fuente variable completa (100–900): permite desde el trazo fino hasta el negro del hero.
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
-  weight: ["400", "500", "600"],
+})
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
 })
 
 export default function RootLayout({
@@ -27,7 +32,7 @@ export default function RootLayout({
     <html
       lang="es"
       suppressHydrationWarning
-      className={cn("font-sans antialiased", geist.variable)}
+      className={cn("font-sans antialiased", geist.variable, geistMono.variable)}
     >
       <body>
         <ThemeProvider defaultTheme="system">
