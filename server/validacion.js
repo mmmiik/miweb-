@@ -122,3 +122,29 @@ export function validarSeleccion(cuerpo) {
   if (errores.length > 0) return { ok: false, errores };
   return { ok: true, datos: { ids, paginas: paginasValidas } };
 }
+
+export const DESCRIPCION_MAX = 1500;
+export const CLIENTE_MAX = 100;
+
+/**
+ * Valida POST /api/propuesta. Devuelve solo cliente y descripcion, recortados.
+ * @param {unknown} cuerpo
+ */
+export function validarPropuesta(cuerpo) {
+  if (typeof cuerpo !== 'object' || cuerpo === null || Array.isArray(cuerpo)) {
+    return { ok: false, errores: ['El cuerpo de la solicitud debe ser un objeto JSON.'] };
+  }
+  const errores = [];
+  const cliente = typeof cuerpo.cliente === 'string' ? cuerpo.cliente.trim() : '';
+  const descripcion = typeof cuerpo.descripcion === 'string' ? cuerpo.descripcion.trim() : '';
+
+  if (cliente === '') errores.push('Indica el nombre del cliente o empresa.');
+  else if (cliente.length > CLIENTE_MAX) errores.push(`El nombre del cliente no puede superar los ${CLIENTE_MAX} caracteres.`);
+
+  if (descripcion === '') errores.push('Describe tu proyecto: la descripción no puede estar vacía.');
+  else if (descripcion.length > DESCRIPCION_MAX) {
+    errores.push(`La descripción no puede superar los ${DESCRIPCION_MAX} caracteres (tiene ${descripcion.length}).`);
+  }
+
+  return errores.length > 0 ? { ok: false, errores } : { ok: true, datos: { cliente, descripcion } };
+}
