@@ -6,6 +6,8 @@ const TINTA = '#18181B';
 const GRIS = '#71717A';
 const LINEA = '#D4D4D8';
 const ACENTO = '#0A84FF';
+const BARRA = '#52525B'; // gris oscuro: las barras de composición no usan el acento
+const BARRA_ANCHO = 150;
 
 const ANCHO_UTIL = 595.28 - 2 * 56; // A4 menos márgenes laterales
 
@@ -38,7 +40,8 @@ const etiqueta = (texto) => ({ text: texto.toUpperCase(), style: 'etiqueta' });
 
 /**
  * @param {{ cliente: string, resumen: string, pendientes: string[],
- *           lineas: {nombre: string, descripcion: string, importe: number}[],
+ *           lineas: {nombre: string, descripcion: string, calculo: string, importe: number}[],
+ *           composicion: {nombre: string, importe: number, porcentaje: number}[],
  *           total: number, moneda: string }} datos
  * @param {{ numero: string, fecha: Date }} meta
  */
@@ -48,13 +51,18 @@ export function construirDocumento(datos, { numero, fecha }) {
 
   const cabeceraTabla = [
     { text: 'Servicio', style: 'cabeceraTabla' },
-    { text: 'Descripción', style: 'cabeceraTabla' },
+    { text: 'Descripción y cálculo', style: 'cabeceraTabla' },
     { text: 'Importe', style: 'cabeceraTabla', alignment: 'right' },
   ];
 
   const filas = datos.lineas.map((l) => [
     { text: limpiar(l.nombre), bold: true },
-    { text: limpiar(l.descripcion), color: GRIS },
+    {
+      stack: [
+        { text: limpiar(l.descripcion), color: GRIS },
+        { text: `Cálculo: ${limpiar(l.calculo)}`, fontSize: 9, margin: [0, 3, 0, 0] },
+      ],
+    },
     { text: euros.format(l.importe), alignment: 'right', noWrap: true },
   ]);
 
@@ -96,14 +104,14 @@ export function construirDocumento(datos, { numero, fecha }) {
       },
       {
         canvas: [{ type: 'line', x1: 0, y1: 0, x2: ANCHO_UTIL, y2: 0, lineWidth: 1, lineColor: ACENTO }],
-        margin: [0, 14, 0, 26],
+        margin: [0, 12, 0, 20],
       },
 
       // Cliente y resumen
       etiqueta('Cliente'),
       { text: limpiar(datos.cliente), fontSize: 12, bold: true, margin: [0, 0, 0, 18] },
       etiqueta('Resumen del proyecto'),
-      { text: resumen, margin: [0, 0, 0, 26] },
+      { text: resumen, margin: [0, 0, 0, 20] },
 
       // Servicios
       {
@@ -119,16 +127,42 @@ export function construirDocumento(datos, { numero, fecha }) {
           hLineColor: () => LINEA,
           paddingLeft: (i) => (i === 0 ? 0 : 8),
           paddingRight: (i, nodo) => (i === nodo.table.widths.length - 1 ? 0 : 8),
-          paddingTop: () => 8,
-          paddingBottom: () => 8,
+          paddingTop: () => 6,
+          paddingBottom: () => 6,
         },
+      },
+
+      // Composición: de dónde sale el total (servicio base, páginas, extras)
+      {
+        unbreakable: true,
+        margin: [0, 16, 0, 0],
+        stack: [
+          etiqueta('Composición del total'),
+          ...datos.composicion.map((c) => ({
+            columns: [
+              { text: limpiar(c.nombre), width: 120 },
+              {
+                width: BARRA_ANCHO + 8,
+                canvas: [
+                  { type: 'rect', x: 0, y: 4, w: BARRA_ANCHO, h: 4, r: 2, color: '#E4E4E7' },
+                  ...(c.porcentaje > 0
+                    ? [{ type: 'rect', x: 0, y: 4, w: Math.max(3, (BARRA_ANCHO * c.porcentaje) / 100), h: 4, r: 2, color: BARRA }]
+                    : []),
+                ],
+              },
+              { text: euros.format(c.importe), alignment: 'right', width: '*' },
+              { text: `${c.porcentaje} %`, alignment: 'right', color: GRIS, width: 40 },
+            ],
+            margin: [0, 3, 0, 3],
+          })),
+        ],
       },
 
       // Total, alineado a la derecha
       {
         unbreakable: true,
         alignment: 'right',
-        margin: [0, 22, 0, 30],
+        margin: [0, 14, 0, 18],
         stack: [
           { text: 'TOTAL', style: 'totalEtiqueta' },
           { text: euros.format(datos.total), style: 'totalImporte', margin: [0, 2, 0, 0] },

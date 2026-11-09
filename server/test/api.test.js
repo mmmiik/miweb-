@@ -302,3 +302,35 @@ test('confirmar · cuerpo no objeto, Content-Type incorrecto y JSON roto → 400
   });
   assert.equal(res.status, 400);
 });
+
+// ---------- Desglose: de dónde sale cada importe ----------
+
+test('confirmar · cada línea explica su cálculo y la composición reparte el total (suma 100 %)', async () => {
+  const res = await confirmar({
+    servicios: [{ id: 'corporativa' }, { id: 'paginasAdicionales' }, { id: 'formulario' }, { id: 'segundoIdioma' }],
+    paginas: 5,
+  });
+  const cuerpo = await res.json();
+  const [corp, pag, form] = cuerpo.lineas;
+  assert.deepEqual([corp.clase, corp.cantidad, corp.precioUnitario], ['base', 1, 600]);
+  assert.match(corp.calculo, /Tarifa fija del servicio base: 600,00/);
+  assert.deepEqual([pag.clase, pag.cantidad, pag.precioUnitario, pag.importe], ['paginas', 4, 50, 200]);
+  assert.match(pag.calculo, /^4 × 50,00/);
+  assert.deepEqual([form.clase, form.importe], ['extra', 80]);
+  assert.deepEqual(
+    cuerpo.composicion.map((c) => [c.clase, c.nombre, c.importe, c.porcentaje]),
+    [['base', 'Servicio base', 600, 58], ['paginas', 'Páginas adicionales', 200, 20], ['extra', 'Extras', 230, 22]],
+  );
+  assert.equal(cuerpo.composicion.reduce((a, c) => a + c.porcentaje, 0), 100);
+  // La composición suma el total y cada línea suma lo suyo.
+  assert.equal(cuerpo.composicion.reduce((a, c) => a + c.importe, 0), cuerpo.total);
+});
+
+test('confirmar · composición solo con las clases presentes y siempre suma 100 %', async () => {
+  const solo = await (await confirmar({ servicios: [{ id: 'landing' }] })).json();
+  assert.deepEqual(solo.composicion.map((c) => [c.clase, c.porcentaje]), [['base', 100]]);
+  for (const paginas of [1, 2, 3, 7, 13, 20]) {
+    const r = await (await confirmar({ servicios: [{ id: 'landing' }, { id: 'paginasAdicionales' }, { id: 'formulario' }, { id: 'segundoIdioma' }], paginas })).json();
+    assert.equal(r.composicion.reduce((a, c) => a + c.porcentaje, 0), 100, `paginas=${paginas}`);
+  }
+});

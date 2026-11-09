@@ -20,9 +20,9 @@ export async function generarPdf(datos, { fecha = new Date(), numero = generarNu
     pdfmake.setLocalAccessPolicy(() => false);
     fuentesCargadas = true;
   }
-  const { lineas, total, moneda } = calcularSeleccion({ ids: datos.ids, paginas: datos.paginas });
+  const { lineas, composicion, total, moneda } = calcularSeleccion({ ids: datos.ids, paginas: datos.paginas });
   const definicion = construirDocumento(
-    { cliente: datos.cliente, resumen: datos.resumen, pendientes: datos.pendientes, lineas, total, moneda },
+    { cliente: datos.cliente, resumen: datos.resumen, pendientes: datos.pendientes, lineas, composicion, total, moneda },
     { numero, fecha },
   );
   const buffer = Buffer.from(await pdfmake.createPdf(definicion).getBuffer());
