@@ -2,29 +2,35 @@
 
 import * as React from "react"
 import {
+  ChartBarIcon,
   FlaskIcon,
   ReceiptIcon,
+  SparkleIcon,
   TagIcon,
 } from "@phosphor-icons/react"
 
 import { CatalogoView } from "@/components/catalogo-view"
+import { PanelView } from "@/components/panel/panel-view"
 import { Flujo } from "@/components/presupuesto/flujo"
+import type { CasoPanel } from "@/components/presupuesto/tipos"
 import { PruebasPanel } from "@/components/pruebas-panel"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { obtenerEstado } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
-type Vista = "presupuesto" | "catalogo" | "pruebas"
+type Vista = "asistente" | "panel" | "catalogo" | "pruebas"
 type Conexion = "comprobando" | "conectada" | "desconectada"
 
 const VISTAS = [
-  { id: "presupuesto", nombre: "Presupuesto", Icono: ReceiptIcon },
+  { id: "asistente", nombre: "Asistente", Icono: SparkleIcon },
+  { id: "panel", nombre: "Panel", Icono: ChartBarIcon },
   { id: "catalogo", nombre: "Catálogo", Icono: TagIcon },
   { id: "pruebas", nombre: "Pruebas", Icono: FlaskIcon },
 ] as const
 
 export function AppShell() {
-  const [vista, setVista] = React.useState<Vista>("presupuesto")
+  const [vista, setVista] = React.useState<Vista>("asistente")
+  const [caso, setCaso] = React.useState<CasoPanel | null>(null)
   const [conexion, setConexion] = React.useState<Conexion>("comprobando")
   const [ms, setMs] = React.useState<number | null>(null)
 
@@ -61,6 +67,7 @@ export function AppShell() {
                 key={id}
                 type="button"
                 onClick={() => setVista(id)}
+                aria-label={nombre}
                 aria-current={vista === id ? "page" : undefined}
                 className={cn(
                   "foco flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors",
@@ -104,9 +111,22 @@ export function AppShell() {
 
       <main className="px-4 py-8 sm:px-6 sm:py-10">
         {/* El flujo se mantiene montado para no perder lo escrito al cambiar de sección. */}
-        <div hidden={vista !== "presupuesto"}>
-          <Flujo />
+        <div hidden={vista !== "asistente"}>
+          <Flujo
+            onVerEnPanel={(c) => {
+              setCaso(c)
+              setVista("panel")
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            }}
+          />
         </div>
+        {vista === "panel" && (
+          <PanelView
+            key={caso?.numero ?? "sin-caso"}
+            caso={caso}
+            onIrAsistente={() => setVista("asistente")}
+          />
+        )}
         {vista === "catalogo" && <CatalogoView />}
         {vista === "pruebas" && <PruebasPanel conexion={conexion} ms={ms} />}
       </main>

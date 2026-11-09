@@ -2,15 +2,17 @@
 
 import * as React from "react"
 
+import { Aviso } from "@/components/aviso"
 import { PasoPresupuesto } from "@/components/presupuesto/paso-presupuesto"
-import { PasoPropuesta } from "@/components/presupuesto/paso-propuesta"
+import { PasoSeleccion } from "@/components/presupuesto/paso-seleccion"
 import { PasoSolicitud } from "@/components/presupuesto/paso-solicitud"
+import { PasoSugerencias } from "@/components/presupuesto/paso-sugerencias"
 import { Stepper } from "@/components/presupuesto/stepper"
 import type {
+  CasoPanel,
   CatalogoPorId,
   EstadoCalculo,
   EstadoPropuesta,
-  ItemServicio,
   Paso,
 } from "@/components/presupuesto/tipos"
 import {
@@ -27,13 +29,13 @@ const textoError = (e: ErrorApi) =>
   e.detalles && e.detalles.length > 0 ? `${e.error}: ${e.detalles.join(" ")}` : e.error
 
 /**
- * Flujo en 3 pasos: solicitud → propuesta de la IA (editable) → presupuesto + PDF.
+ * Asistente en 4 pasos: tu idea → sugerencias de la IA → tu selección → presupuesto + PDF.
  *
- * Regla de oro: aquí no se calcula ningún importe. La IA solo propone ids; el usuario
- * los acepta o quita; y los importes, el total y el PDF los devuelve siempre el servidor.
+ * Regla de oro: aquí no se calcula ningún importe. La IA solo propone ids; el usuario los
+ * acepta, quita o añade; y los importes, el total y el PDF los devuelve siempre el servidor.
  * Cualquier cambio en los servicios invalida el cálculo y la vista previa.
  */
-export function Flujo() {
+export function Flujo({ onVerEnPanel }: { onVerEnPanel: (caso: CasoPanel) => void }) {
   const [paso, setPaso] = React.useState<Paso>(1)
   const [maximo, setMaximo] = React.useState<Paso>(1)
 
@@ -42,15 +44,14 @@ export function Flujo() {
   const [descripcion, setDescripcion] = React.useState("")
   const [erroresSolicitud, setErroresSolicitud] = React.useState<string[] | null>(null)
 
-  // Paso 2
+  // Pasos 2 y 3
   const [propuesta, setPropuesta] = React.useState<EstadoPropuesta | null>(null)
   const [firmaPropuesta, setFirmaPropuesta] = React.useState("")
-  const [items, setItems] = React.useState<ItemServicio[]>([])
   const [activos, setActivos] = React.useState<Record<string, boolean>>({})
   const [paginas, setPaginas] = React.useState("")
   const [catalogo, setCatalogo] = React.useState<Catalogo | null>(null)
 
-  // Paso 3
+  // Paso 4
   const [calculo, setCalculo] = React.useState<EstadoCalculo | null>(null)
 
   const abortPropuesta = React.useRef<AbortController | null>(null)
@@ -78,7 +79,8 @@ export function Flujo() {
 
   /* ---------- Derivados (solo guían la interfaz; el servidor valida) ---------- */
 
-  const idsActivos = items.filter((i) => activos[i.id]).map((i) => i.id)
+  // Se respeta el orden del catálogo.
+  const idsActivos = (catalogo?.servicios ?? []).filter((s) => activos[s.id]).map((s) => s.id)
   const usaPaginas = idsActivos.includes("paginasAdicionales")
   const paginasNum = Number(paginas)
   const paginasValidas =
@@ -93,6 +95,12 @@ export function Flujo() {
   if (usaPaginas && !paginasValidas) {
     bloqueos.push("Indica el número total de páginas (entre 1 y 20).")
   }
+
+  const datosPropuesta = propuesta?.fase === "lista" ? propuesta.datos : null
+  const sugeridos = React.useMemo(
+    () => Object.fromEntries((datosPropuesta?.servicios ?? []).map((s) => [s.id, s.justificacion])),
+    [datosPropuesta]
+  )
 
   /* ---------- Utilidades ---------- */
 
@@ -115,9 +123,9 @@ export function Flujo() {
 
   const firmaActual = `${cliente.trim()}\n${descripcion.trim()}`
 
-  /* ---------- Paso 1 → 2 ---------- */
+  /* ---------- Paso 1 → 2: la IA sugiere ---------- */
 
-  async function proponer() {
+  async function pedirSugerencias() {
     setErroresSolicitud(null)
 
     // Si nada ha cambiado y ya hay propuesta, se conserva (y con ella las ediciones del usuario).
@@ -142,13 +150,6 @@ export function Flujo() {
       const r = await pedirPropuesta({ cliente, descripcion }, ctrl.signal)
       if (ctrl.signal.aborted) return
       if (r.ok) {
-        setItems(
-          r.datos.servicios.map((s) => ({
-            id: s.id,
-            justificacion: s.justificacion,
-            propuesto: true,
-          }))
-        )
         setActivos(Object.fromEntries(r.datos.servicios.map((s) => [s.id, true])))
         setPaginas("")
         setFirmaPropuesta(firmaActual)
@@ -166,7 +167,7 @@ export function Flujo() {
     }
   }
 
-  /* ---------- Edición de servicios (paso 2) ---------- */
+  /* ---------- Edición de servicios (pasos 2 y 3) ---------- */
 
   function alternar(id: string, activo: boolean) {
     invalidarCalculo()
@@ -174,18 +175,12 @@ export function Flujo() {
       const siguiente = { ...prev, [id]: activo }
       // Los servicios base son excluyentes: al activar uno, se apagan los demás.
       if (activo && catalogoPorId[id]?.clase === "base") {
-        for (const otro of items) {
-          if (otro.id !== id && catalogoPorId[otro.id]?.clase === "base") siguiente[otro.id] = false
+        for (const otro of catalogo?.servicios ?? []) {
+          if (otro.id !== id && otro.clase === "base") siguiente[otro.id] = false
         }
       }
       return siguiente
     })
-  }
-
-  function anadir(id: string) {
-    invalidarCalculo()
-    setItems((prev) => (prev.some((i) => i.id === id) ? prev : [...prev, { id, propuesto: false }]))
-    alternar(id, true)
   }
 
   function cambiarPaginas(valor: string) {
@@ -193,7 +188,7 @@ export function Flujo() {
     setPaginas(valor)
   }
 
-  /* ---------- Paso 2 → 3: el servidor calcula importes y PDF ---------- */
+  /* ---------- Paso 3 → 4: el servidor calcula importes y PDF ---------- */
 
   async function calcular() {
     if (propuesta?.fase !== "lista" || bloqueos.length > 0) return
@@ -226,37 +221,55 @@ export function Flujo() {
       if (!pdf.ok) return setCalculo({ fase: "error", mensaje: textoError(pdf.datos) })
       const url = URL.createObjectURL(pdf.blob)
       urlPdf.current = url
-      setCalculo({ fase: "lista", confirmacion: conf.datos, pdfUrl: url, numero: pdf.numero })
+      setCalculo({
+        fase: "lista",
+        confirmacion: conf.datos,
+        pdfBlob: pdf.blob,
+        pdfUrl: url,
+        numero: pdf.numero,
+      })
     } catch {
       /* cancelado por un cambio de servicios */
     }
   }
 
-  function continuar() {
+  function verPresupuesto() {
     if (bloqueos.length > 0) return
-    irA(3)
+    irA(4)
     if (!calculo || calculo.fase === "error") void calcular()
+  }
+
+  function verEnPanel() {
+    if (calculo?.fase !== "lista" || !datosPropuesta) return
+    onVerEnPanel({
+      cliente: datosPropuesta.cliente,
+      resumen: datosPropuesta.resumen,
+      pendientes: datosPropuesta.pendientes,
+      confirmacion: calculo.confirmacion,
+      pdfBlob: calculo.pdfBlob,
+      numero: calculo.numero,
+    })
   }
 
   function ir(destino: Paso) {
     if (destino === paso) return
-    // Si en el paso 1 se ha cambiado el texto, hay que volver a pedir la propuesta.
-    if (paso === 1 && destino >= 2 && firmaActual !== firmaPropuesta) return void proponer()
-    if (destino === 3) return continuar()
+    // Si en el paso 1 se ha cambiado el texto, hay que volver a pedir las sugerencias.
+    if (paso === 1 && destino >= 2 && firmaActual !== firmaPropuesta) return void pedirSugerencias()
+    if (destino === 4) return verPresupuesto()
     irA(destino)
   }
 
   /* ---------- Render ---------- */
 
-  const ancho = paso === 3 ? "max-w-6xl" : "max-w-2xl"
-  const datosPropuesta = propuesta?.fase === "lista" ? propuesta.datos : null
+  const ancho = paso === 4 ? "max-w-6xl" : "max-w-2xl"
 
   return (
     <div className={cn("mx-auto w-full space-y-6 transition-[max-width]", ancho)}>
       <div className="space-y-1.5">
-        <h1 className="text-2xl font-semibold tracking-tight">Presupuesta mi web</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Asistente de propuestas</h1>
         <p className="text-sm text-muted-foreground">
-          Cuéntanos tu proyecto, revisa los servicios propuestos y descarga tu presupuesto en PDF.
+          Cuéntanos tu idea, te sugerimos servicios, eliges los que quieras y te llevas tu
+          presupuesto en PDF con el desglose de cada importe.
         </p>
       </div>
 
@@ -270,36 +283,49 @@ export function Flujo() {
           enviando={propuesta?.fase === "cargando"}
           onCliente={setCliente}
           onDescripcion={setDescripcion}
-          onEnviar={proponer}
+          onEnviar={pedirSugerencias}
         />
       )}
 
       {paso === 2 && propuesta && (
-        <PasoPropuesta
+        <PasoSugerencias
           estado={propuesta}
-          catalogo={catalogo}
           catalogoPorId={catalogoPorId}
-          items={items}
+          moneda={catalogo?.moneda ?? "EUR"}
           activos={activos}
-          paginas={paginas}
           onAlternar={alternar}
-          onAnadir={anadir}
-          onPaginas={cambiarPaginas}
-          onReintentar={proponer}
+          onReintentar={pedirSugerencias}
           onVolver={() => irA(1)}
-          onContinuar={continuar}
-          bloqueos={bloqueos}
-          resumen={datosPropuesta?.resumen}
-          pendientes={datosPropuesta?.pendientes}
-          avisos={datosPropuesta?.avisos}
+          onContinuar={() => irA(3)}
         />
       )}
 
-      {paso === 3 && (
+      {paso === 3 && !catalogo && (
+        <Aviso tipo="error" titulo="No se ha podido cargar el catálogo">
+          Comprueba tu conexión y vuelve a las sugerencias para reintentarlo.
+        </Aviso>
+      )}
+
+      {paso === 3 && catalogo && (
+        <PasoSeleccion
+          catalogo={catalogo}
+          sugeridos={sugeridos}
+          activos={activos}
+          paginas={paginas}
+          onAlternar={alternar}
+          onPaginas={cambiarPaginas}
+          onVolver={() => irA(2)}
+          onContinuar={verPresupuesto}
+          bloqueos={bloqueos}
+        />
+      )}
+
+      {paso === 4 && (
         <PasoPresupuesto
           estado={calculo}
-          onVolver={() => irA(2)}
+          onVolver={() => irA(3)}
           onReintentar={calcular}
+          onVerEnPanel={verEnPanel}
         />
       )}
     </div>

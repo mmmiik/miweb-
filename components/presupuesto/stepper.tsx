@@ -6,9 +6,10 @@ import type { Paso } from "@/components/presupuesto/tipos"
 import { cn } from "@/lib/utils"
 
 const PASOS: { n: Paso; nombre: string }[] = [
-  { n: 1, nombre: "Solicitud" },
-  { n: 2, nombre: "Propuesta" },
-  { n: 3, nombre: "Presupuesto" },
+  { n: 1, nombre: "Tu idea" },
+  { n: 2, nombre: "Sugerencias" },
+  { n: 3, nombre: "Tu selección" },
+  { n: 4, nombre: "Presupuesto" },
 ]
 
 /** Indicador de los 3 pasos. Los ya completados se pueden pulsar para volver. */
@@ -23,7 +24,7 @@ export function Stepper({
   onIr: (paso: Paso) => void
 }) {
   return (
-    <nav aria-label="Pasos del presupuesto">
+    <nav aria-label="Pasos del asistente">
       <ol className="flex items-center gap-2">
         {PASOS.map(({ n, nombre }, i) => {
           const actual = n === paso

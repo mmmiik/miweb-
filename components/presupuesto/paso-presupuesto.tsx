@@ -4,6 +4,7 @@ import * as React from "react"
 import {
   ArrowLeftIcon,
   ArrowSquareOutIcon,
+  ChartBarIcon,
   DownloadSimpleIcon,
   SpinnerGapIcon,
 } from "@phosphor-icons/react"
@@ -19,10 +20,13 @@ export function PasoPresupuesto({
   estado,
   onVolver,
   onReintentar,
+  onVerEnPanel,
 }: {
   estado: EstadoCalculo | null
   onVolver: () => void
   onReintentar: () => void
+  /** Lleva este caso al panel para verlo en detalle. */
+  onVerEnPanel: () => void
 }) {
   const [descargado, setDescargado] = React.useState(false)
 
@@ -54,7 +58,7 @@ export function PasoPresupuesto({
           <div className="flex flex-wrap justify-between gap-2">
             <Button variant="outline" onClick={onVolver}>
               <ArrowLeftIcon weight="bold" aria-hidden />
-              Revisar servicios
+              Cambiar mi selección
             </Button>
             <Button onClick={onReintentar}>Reintentar</Button>
           </div>
@@ -75,7 +79,7 @@ export function PasoPresupuesto({
                 <li key={l.id} className="fila py-3">
                   <div className="min-w-0 flex-1">
                     <p className="texto-encabezado">{l.nombre}</p>
-                    <p className="mt-0.5 text-sm text-muted-foreground">{l.descripcion}</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{l.calculo}</p>
                   </div>
                   <span className="shrink-0 text-sm font-medium tabular-nums">
                     {formatearEuros(l.importe, confirmacion.moneda, true)}
@@ -102,21 +106,27 @@ export function PasoPresupuesto({
           </Aviso>
         )}
 
-        <div className="flex flex-wrap justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Button variant="outline" onClick={onVolver}>
             <ArrowLeftIcon weight="bold" aria-hidden />
-            Revisar servicios
+            Cambiar mi selección
           </Button>
-          {/* Descarga exactamente el PDF de la vista previa (mismo blob). */}
-          <a
-            href={pdfUrl}
-            download={`${numero}.pdf`}
-            onClick={() => setDescargado(true)}
-            className={cn(buttonVariants({ size: "lg" }), "foco")}
-          >
-            <DownloadSimpleIcon weight="bold" aria-hidden />
-            Aceptar y descargar
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={onVerEnPanel}>
+              <ChartBarIcon weight="bold" aria-hidden />
+              Ver en el panel
+            </Button>
+            {/* Descarga exactamente el PDF de la vista previa (mismo blob). */}
+            <a
+              href={pdfUrl}
+              download={`${numero}.pdf`}
+              onClick={() => setDescargado(true)}
+              className={cn(buttonVariants({ size: "lg" }), "foco")}
+            >
+              <DownloadSimpleIcon weight="bold" aria-hidden />
+              Aceptar y descargar
+            </a>
+          </div>
         </div>
       </div>
 

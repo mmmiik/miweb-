@@ -78,7 +78,7 @@ export function calcularSeleccion({ ids, paginas }) {
       descripcion: s.descripcion,
       cantidad: 1,
       precioUnitario: s.precio,
-      calculo: `${s.clase === 'base' ? 'Tarifa fija del servicio base' : 'Extra de precio fijo'}: ${eur(s.precio)}`,
+      calculo: `${s.clase === 'base' ? 'Tarifa fija' : 'Precio fijo'} de ${eur(s.precio)}`,
       importe: s.precio,
     };
   });

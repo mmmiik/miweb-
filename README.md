@@ -24,14 +24,22 @@ Un único proyecto: interfaz **Next.js** + API **Node.js / Express (JavaScript)*
 
 ## 1. Cómo funciona
 
+La página tiene **dos partes** (más el Catálogo y las Pruebas):
+
+**Asistente de propuestas** (4 pasos)
+
 ```
- 1 Solicitud ──► 2 Propuesta ──► 3 Presupuesto
- nombre +        la IA propone    el servidor calcula importes y total
- descripción     ids del          y genera el PDF; la vista previa es
- (≤ 1500 car.)   catálogo;        ese mismo PDF y "Aceptar y descargar"
-                 el usuario       descarga ese mismo archivo
-                 acepta/quita/añade
+ 1 Tu idea ──► 2 Sugerencias ──► 3 Tu selección ──► 4 Presupuesto ──► Panel
+ nombre de la    la IA propone     eliges lo que       el servidor calcula     tu caso, con la
+ página y la     ids del           quieras, además     importes, total y PDF   gráfica de barras
+ idea general    catálogo, con     de lo sugerido      (con el desglose de     y el origen de
+ (≤ 1500 car.)   justificación     (y los datos que    cada importe); la vista  cada importe
+ + ejemplos      y dudas           falten)             previa es ese mismo PDF
 ```
+
+Hay **ejemplos ya creados** para ver cómo reacciona la IA: *Clara* (restaurante), *Ambigua* («algo en internet»), *Fuera del catálogo* (tienda online), *Sencilla* (landing de evento) y *Completa* (academia de 8 páginas).
+
+**Panel**: el presupuesto desglosado. Muestra **Mi caso** (lo que acabas de crear en el asistente) y tres presupuestos de ejemplo que el servidor calcula al momento, sin IA. Incluye el total, la composición (servicio base / páginas / extras con su porcentaje) y una **gráfica de barras** con el importe de cada servicio y de dónde sale (tarifa fija, `4 × 50 €`…), con vista alternativa en tabla y descarga del PDF.
 
 **La IA solo propone y redacta.** Devuelve ids del catálogo, una justificación por servicio y una lista de «pendientes de aclarar». No decide precios, plazos ni compromisos: el servidor valida cada id y calcula todos los importes. Cualquier cambio de servicios invalida la vista previa y se vuelve a calcular.
 
@@ -102,7 +110,7 @@ Abre **http://localhost:3001**. Next reenvía `/api/*` a Express (`rewrites` de 
 Los errores son siempre JSON `{ "error": "...", "detalles": ["..."] }`. Cualquier otra ruta devuelve `404` JSON.
 
 - **`/api/propuesta`** — `400` si `cliente` o `descripcion` están vacíos o la descripción supera 1500 caracteres; `429` si una IP supera 10 solicitudes en 10 minutos; `502` si falla OpenAI (o no hay clave); `504` si no responde en 20 s. Respuesta `200`: `{cliente, resumen, servicios:[{id, nombre, justificacion, parametros}], pendientes, avisos}`; **nunca lleva importes**. `avisos` informa de lo que se descartó (ids inventados, precios o plazos colados por el modelo…).
-- **`/api/presupuesto/confirmar`** — `400` si hay ids desconocidos o repetidos, dos servicios base a la vez, ninguno, o falta/es inválido `paginas` (entero de 1 a 20) cuando se piden páginas adicionales. Devuelve `{lineas:[{id, nombre, descripcion, importe}], total, moneda}`. Da los mismos totales que `POST /api/presupuesto` para selecciones equivalentes (hay un test que recorre 32 combinaciones).
+- **`/api/presupuesto/confirmar`** — `400` si hay ids desconocidos o repetidos, dos servicios base a la vez, ninguno, o falta/es inválido `paginas` (entero de 1 a 20) cuando se piden páginas adicionales. Devuelve `{lineas, composicion, total, moneda}`: cada línea trae `{id, clase, nombre, descripcion, cantidad, precioUnitario, calculo, importe}` (el `calculo` explica de dónde sale, p. ej. `4 × 50,00 € (la primera página ya está incluida…)`) y `composicion` reparte el total entre servicio base, páginas y extras con `{clase, nombre, importe, porcentaje}` (los porcentajes suman 100). Da los mismos totales que `POST /api/presupuesto` para selecciones equivalentes (hay un test que recorre 32 combinaciones).
 - **`/api/presupuesto/pdf`** — el servidor **recalcula** los importes y pone él la fecha y el nº `PM-AAAAMMDD-XXXX`; ignora cualquier importe recibido.
 
 Ejemplo:
@@ -143,7 +151,7 @@ Si falta un parámetro, se pide al usuario; **nunca se inventa**. Sin impuestos 
 
 ## 8. El PDF y la decisión de librería
 
-Se genera **en el servidor** con [`pdfmake`](https://pdfmake.github.io/docs/) (plantilla en [server/pdf/plantilla.js](server/pdf/plantilla.js)): A4, fondo blanco, márgenes amplios, Roboto (con tildes), tinta casi negra y grises, líneas de 0,5 pt y un único acento azul `#0A84FF` en la línea bajo la cabecera y en el total. Sin logos ni rellenos. Incluye cabecera (marca, «PRESUPUESTO», nº y fecha), cliente, resumen, tabla de servicios con importes a la derecha, total, «Aclaraciones y aspectos pendientes de concretar» (o «Sin aspectos pendientes») y pie «Importes calculados por el servidor. Sin impuestos aplicados.» con paginación x/y. No contiene plazos, validez ni condiciones que no existan.
+Se genera **en el servidor** con [`pdfmake`](https://pdfmake.github.io/docs/) (plantilla en [server/pdf/plantilla.js](server/pdf/plantilla.js)): A4, fondo blanco, márgenes amplios, Roboto (con tildes), tinta casi negra y grises, líneas de 0,5 pt y un único acento azul `#0A84FF` en la línea bajo la cabecera y en el total. Sin logos ni rellenos. Incluye cabecera (marca, «PRESUPUESTO», nº y fecha), cliente, resumen, tabla de servicios con **«Descripción y cálculo»** (cada línea explica de dónde sale su importe) e importes a la derecha, **«Composición del total»** (servicio base, páginas y extras con barra y porcentaje, en grises), total, «Aclaraciones y aspectos pendientes de concretar» (o «Sin aspectos pendientes») y pie «Importes calculados por el servidor. Sin impuestos aplicados.» con paginación x/y. No contiene plazos, validez ni condiciones que no existan.
 
 | Opción | A favor | En contra | Decisión |
 |---|---|---|---|
@@ -157,12 +165,12 @@ Las tipografías se leen a memoria con `require.resolve` y se incluyen explícit
 ## 9. Pruebas
 
 ```bash
-npm test      # 55 pruebas, sin red ni clave (el modelo está simulado)
+npm test      # 57 pruebas, sin red ni clave (el modelo está simulado)
 ```
 
 ```
-ℹ tests 55
-ℹ pass 55
+ℹ tests 57
+ℹ pass 57
 ℹ fail 0
 ```
 
@@ -179,7 +187,7 @@ npm test      # 55 pruebas, sin red ni clave (el modelo está simulado)
 | 5 | El modelo falla / no responde | `502` / `504` en JSON y la API sigue funcionando | ✅ `502` (sin filtrar el detalle del proveedor) y `504` en < 2 s; `/api/estado` y `/confirmar` siguen en `200`; la propuesta se recupera después |
 | 6 | Propuesta de 4 servicios; el usuario quita `segundoIdioma`, cambia a `landing`, pone 3 páginas | `confirmar` y PDF reflejan la selección final: 300 + 2×50 + 80 = **480 €** | ✅ el PDF (texto extraído con pdfjs) contiene *Landing page*, «2 páginas adicionales (3 en total)», *Formulario* y **480,00 €**; no aparecen *Segundo idioma*, *Web corporativa* ni 1.030,00 € |
 
-Pruebas adicionales de la IA y el PDF: id inventado (`seoAvanzado`, `__proto__`) descartado con aviso; dos bases o duplicados → una sola base; precios y plazos colados por el modelo eliminados; cliente vacío / descripción de 1501 caracteres → `400`; respuesta no JSON, vacía, rechazada o incompleta → `502`; sin clave → `502` claro; `429` tras 10 solicitudes por IP; descripción que intenta cerrar la etiqueta delimitadora; importes enviados por el cliente a `/confirmar` y `/pdf` → ignorados; id desconocido en `/confirmar` → `400`; PDF paginado con pie `x/y`; tildes y «¿…?» correctos en el PDF.
+Pruebas adicionales de la IA y el PDF: id inventado (`seoAvanzado`, `__proto__`) descartado con aviso; dos bases o duplicados → una sola base; precios y plazos colados por el modelo eliminados; cliente vacío / descripción de 1501 caracteres → `400`; respuesta no JSON, vacía, rechazada o incompleta → `502`; sin clave → `502` claro; `429` tras 10 solicitudes por IP; descripción que intenta cerrar la etiqueta delimitadora; importes enviados por el cliente a `/confirmar` y `/pdf` → ignorados; id desconocido en `/confirmar` → `400`; PDF paginado con pie `x/y`; tildes y «¿…?» correctos en el PDF; desglose del cálculo y composición del total en la API y en el PDF.
 
 ### 9.2 Casos reales con OpenAI
 
@@ -225,11 +233,12 @@ Un solo proyecto y una sola URL: Next.js se sirve como siempre y `api/index.js` 
 
 ## 11. Interfaz
 
-Interfaz estilo iOS: vidrio sutil sobre un fondo de manchas difuminadas, tipografía Geist, iconos Phosphor, modo claro y oscuro (botón o tecla `d`) y un único acento azul. Tres secciones:
+Interfaz estilo iOS: vidrio sutil sobre un fondo de manchas difuminadas, tipografía Geist, iconos Phosphor, modo claro y oscuro (botón o tecla `d`) y un único acento azul. Cuatro secciones:
 
 | Sección | Qué muestra |
 |---|---|
-| **Presupuesto** | El flujo de tres pasos (§1): solicitud con contador de caracteres y errores 400 del servidor; propuesta con interruptores, «añadir servicio», parámetros que faltan (bloquean «Continuar») y pendientes en aviso ámbar; presupuesto con totales del servidor y vista previa del PDF. Si falla la IA hay un estado de error con «Reintentar» que conserva lo escrito. |
+| **Asistente** | Los 4 pasos (§1): idea con ejemplos y contador de caracteres (los errores 400 los muestra el servidor); sugerencias de la IA con su justificación y los pendientes en aviso ámbar; selección con lo sugerido y el resto del catálogo, y los datos que faltan (el nº de páginas bloquea «Ver mi presupuesto» hasta completarlo); presupuesto con vista previa del PDF, «Aceptar y descargar» y «Ver en el panel». Si falla la IA hay un estado de error con «Reintentar» que conserva lo escrito. |
+| **Panel** | «Mi caso» y tres ejemplos: total, composición del total, **gráfica de barras** de los importes (de mayor a menor, un solo tono, valor en la punta y origen de cada barra escrito debajo; vista alternativa en tabla) y descarga del PDF. |
 | **Catálogo** | `GET /api/catalogo`: servicios, qué incluyen y su precio. |
 | **Pruebas** | Marcador X/9 y una tarjeta por cada caso de `POST /api/presupuesto`. |
 

@@ -53,17 +53,17 @@ export function Aviso({
     <div
       role={tipo === "error" ? "alert" : "status"}
       className={cn(
-        "flex items-start gap-3 rounded-xl border px-4 py-3 text-sm",
+        "flex flex-wrap items-start gap-3 rounded-xl border px-4 py-3 text-sm sm:flex-nowrap",
         caja,
         className
       )}
     >
       <Icono weight={peso} className="mt-0.5 size-4 shrink-0" aria-hidden />
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="min-w-[12rem] flex-1 space-y-1">
         {titulo && <p className="texto-encabezado">{titulo}</p>}
         {children && <div className="leading-relaxed">{children}</div>}
       </div>
-      {accion}
+      {accion && <div className="ml-7 sm:ml-0">{accion}</div>}
     </div>
   )
 }

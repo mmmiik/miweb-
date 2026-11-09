@@ -313,7 +313,7 @@ test('confirmar · cada línea explica su cálculo y la composición reparte el 
   const cuerpo = await res.json();
   const [corp, pag, form] = cuerpo.lineas;
   assert.deepEqual([corp.clase, corp.cantidad, corp.precioUnitario], ['base', 1, 600]);
-  assert.match(corp.calculo, /Tarifa fija del servicio base: 600,00/);
+  assert.match(corp.calculo, /^Tarifa fija de 600,00/);
   assert.deepEqual([pag.clase, pag.cantidad, pag.precioUnitario, pag.importe], ['paginas', 4, 50, 200]);
   assert.match(pag.calculo, /^4 × 50,00/);
   assert.deepEqual([form.clase, form.importe], ['extra', 80]);

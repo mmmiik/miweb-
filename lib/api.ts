@@ -86,13 +86,27 @@ export interface Propuesta {
 
 export interface LineaPresupuesto {
   id: string
+  clase: ClaseServicio
   nombre: string
   descripcion: string
+  /** De dónde sale el importe: cantidad × precio unitario, calculado por el servidor. */
+  cantidad: number
+  precioUnitario: number
+  calculo: string
   importe: number
+}
+
+/** Cómo se reparte el total entre servicio base, páginas adicionales y extras. */
+export interface ParteComposicion {
+  clase: ClaseServicio
+  nombre: string
+  importe: number
+  porcentaje: number
 }
 
 export interface Confirmacion {
   lineas: LineaPresupuesto[]
+  composicion: ParteComposicion[]
   total: number
   moneda: string
 }

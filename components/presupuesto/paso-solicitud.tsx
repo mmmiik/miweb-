@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { EJEMPLOS_ASISTENTE, type EjemploAsistente } from "@/lib/ejemplos"
 import { cn } from "@/lib/utils"
 
 export function PasoSolicitud({
@@ -34,8 +35,16 @@ export function PasoSolicitud({
   const cerca = largo > DESCRIPCION_MAX * 0.9
   const pasado = largo > DESCRIPCION_MAX
 
+  function usarEjemplo(e: EjemploAsistente) {
+    onCliente(e.cliente)
+    onDescripcion(e.descripcion)
+  }
+
   return (
-    <Caja titulo="Cuéntanos tu proyecto" icono={<SparkleIcon weight="bold" className="size-4 text-primary" aria-hidden />}>
+    <Caja
+      titulo="Cuéntanos tu idea"
+      icono={<SparkleIcon weight="bold" className="size-4 text-primary" aria-hidden />}
+    >
       <form
         className="space-y-5 p-4 sm:p-6"
         onSubmit={(e) => {
@@ -44,13 +53,40 @@ export function PasoSolicitud({
         }}
       >
         <p className="text-sm text-muted-foreground">
-          Describe qué necesitas con tus palabras. Te propondremos los servicios que mejor
-          encajan y podrás revisarlos antes de ver el presupuesto.
+          Dinos cómo se llama tu página y de qué va. El asistente te sugerirá los servicios que
+          mejor encajan y después podrás añadir lo que quieras.
         </p>
+
+        {/* Ejemplos ya creados */}
+        <div className="space-y-2">
+          <p className="texto-seccion">¿Quieres verlo en acción? Prueba un ejemplo</p>
+          <ul className="flex flex-wrap gap-2">
+            {EJEMPLOS_ASISTENTE.map((e) => {
+              const activo = cliente === e.cliente && descripcion === e.descripcion
+              return (
+                <li key={e.id}>
+                  <button
+                    type="button"
+                    onClick={() => usarEjemplo(e)}
+                    aria-pressed={activo}
+                    className={cn(
+                      "foco min-h-11 rounded-xl border px-3 text-sm transition-colors",
+                      activo
+                        ? "border-primary/50 bg-primary/10 text-foreground"
+                        : "border-black/10 bg-white/50 text-muted-foreground hover:text-foreground dark:border-white/10 dark:bg-white/5"
+                    )}
+                  >
+                    <span className="font-medium">{e.etiqueta}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
 
         <div className="space-y-2">
           <Label htmlFor="cliente" className="texto-seccion">
-            Nombre o empresa
+            Nombre de tu página o proyecto
           </Label>
           <Input
             id="cliente"
@@ -65,7 +101,7 @@ export function PasoSolicitud({
         <div className="space-y-2">
           <div className="flex items-baseline justify-between gap-3">
             <Label htmlFor="descripcion" className="texto-seccion">
-              Descripción del proyecto
+              La idea general
             </Label>
             <span
               className={cn(
@@ -105,7 +141,7 @@ export function PasoSolicitud({
             {enviando ? (
               <SpinnerGapIcon weight="bold" className="animate-spin" aria-hidden />
             ) : null}
-            Proponer servicios
+            Pedir sugerencias
             {!enviando && <ArrowRightIcon weight="bold" aria-hidden />}
           </Button>
         </div>
