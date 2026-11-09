@@ -1,4 +1,5 @@
 import { TIPOS, PAGINAS_MIN, PAGINAS_MAX } from './tarifas.js';
+import { IDS_SERVICIOS, obtenerServicio } from './catalogo.js';
 
 const CAMPOS_OBLIGATORIOS = ['tipo', 'paginas', 'formulario', 'segundoIdioma'];
 
@@ -56,4 +57,68 @@ export function validarSolicitud(cuerpo) {
   }
 
   return { ok: true, datos: { tipo, paginas, formulario, segundoIdioma } };
+}
+
+/**
+ * Valida la selección de servicios de POST /api/presupuesto/confirmar.
+ * Solo se leen los ids (y "paginas" si hace falta): cualquier otra propiedad,
+ * como un "importe" enviado por el cliente, se descarta sin mirarla.
+ *
+ * @param {unknown} cuerpo
+ * @returns {{ ok: true, datos: { ids: string[], paginas?: number } } | { ok: false, errores: string[] }}
+ */
+export function validarSeleccion(cuerpo) {
+  if (typeof cuerpo !== 'object' || cuerpo === null || Array.isArray(cuerpo)) {
+    return { ok: false, errores: ['El cuerpo de la solicitud debe ser un objeto JSON.'] };
+  }
+  const { servicios, paginas } = cuerpo;
+  if (!Array.isArray(servicios) || servicios.length === 0) {
+    return { ok: false, errores: ['"servicios" debe ser una lista con al menos un servicio.'] };
+  }
+  if (servicios.length > IDS_SERVICIOS.length) {
+    return {
+      ok: false,
+      errores: [`"servicios" no puede tener más de ${IDS_SERVICIOS.length} elementos (hay servicios repetidos).`],
+    };
+  }
+
+  const errores = [];
+  const ids = [];
+  for (const [i, item] of servicios.entries()) {
+    const id = typeof item === 'object' && item !== null ? item.id : undefined;
+    if (typeof id !== 'string' || id === '') {
+      errores.push(`El servicio en la posición ${i + 1} no tiene un "id" válido.`);
+    } else if (!obtenerServicio(id)) {
+      errores.push(`El servicio "${id}" no existe en el catálogo.`);
+    } else if (ids.includes(id)) {
+      errores.push(`El servicio "${id}" está repetido.`);
+    } else {
+      ids.push(id);
+    }
+  }
+  if (errores.length > 0) return { ok: false, errores };
+
+  const bases = ids.filter((id) => obtenerServicio(id).clase === 'base');
+  if (bases.length === 0) {
+    errores.push('Falta un servicio base: elige "landing" o "corporativa".');
+  } else if (bases.length > 1) {
+    errores.push(`Solo puede haber un servicio base, y se han enviado ${bases.length}: ${bases.join(', ')}.`);
+  }
+
+  // El parámetro "paginas" solo se exige (y se valida) si se piden páginas adicionales.
+  let paginasValidas;
+  if (ids.includes('paginasAdicionales')) {
+    if (paginas === undefined || paginas === null) {
+      errores.push('Falta el parámetro "paginas" (número total de páginas) para las páginas adicionales.');
+    } else if (typeof paginas !== 'number' || !Number.isInteger(paginas)) {
+      errores.push(`"paginas" debe ser un número entero (recibido: ${JSON.stringify(paginas)}).`);
+    } else if (paginas < PAGINAS_MIN || paginas > PAGINAS_MAX) {
+      errores.push(`"paginas" debe estar entre ${PAGINAS_MIN} y ${PAGINAS_MAX} (recibido: ${paginas}).`);
+    } else {
+      paginasValidas = paginas;
+    }
+  }
+
+  if (errores.length > 0) return { ok: false, errores };
+  return { ok: true, datos: { ids, paginas: paginasValidas } };
 }

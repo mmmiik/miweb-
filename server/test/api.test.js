@@ -164,3 +164,141 @@ test('calcularPresupuesto funciona sin Express', () => {
     base: 600, paginasAdicionales: 150, formulario: 80, segundoIdioma: 0, total: 830, moneda: 'EUR',
   });
 });
+
+// ---------- Fase 1 · catálogo y /api/presupuesto/confirmar ----------
+
+function confirmar(cuerpo) {
+  return fetch(`${URL_BASE}/api/presupuesto/confirmar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cuerpo),
+  });
+}
+
+test('GET /api/catalogo → servicios con precios derivados de las tarifas', async () => {
+  const res = await fetch(`${URL_BASE}/api/catalogo`);
+  assert.equal(res.status, 200);
+  const { moneda, servicios } = await res.json();
+  assert.equal(moneda, 'EUR');
+  assert.deepEqual(
+    servicios.map((s) => s.id),
+    ['landing', 'corporativa', 'paginasAdicionales', 'formulario', 'segundoIdioma'],
+  );
+  const por = Object.fromEntries(servicios.map((s) => [s.id, s]));
+  assert.equal(por.landing.precio, 300);
+  assert.equal(por.corporativa.precio, 600);
+  assert.equal(por.paginasAdicionales.precioUnitario, 50);
+  assert.deepEqual(
+    por.paginasAdicionales.parametros.map((p) => [p.nombre, p.min, p.max]),
+    [['paginas', 1, 20]],
+  );
+  assert.equal(por.formulario.precio, 80);
+  assert.equal(por.segundoIdioma.precio, 150);
+  for (const s of servicios) assert.ok(s.nombre && s.descripcion);
+});
+
+test('confirmar · líneas con id, nombre, descripción e importe, y total', async () => {
+  const res = await confirmar({
+    servicios: [{ id: 'corporativa' }, { id: 'paginasAdicionales' }, { id: 'formulario' }],
+    paginas: 4,
+  });
+  assert.equal(res.status, 200);
+  const cuerpo = await res.json();
+  assert.equal(cuerpo.moneda, 'EUR');
+  assert.deepEqual(
+    cuerpo.lineas.map((l) => [l.id, l.importe]),
+    [['corporativa', 600], ['paginasAdicionales', 150], ['formulario', 80]],
+  );
+  for (const l of cuerpo.lineas) assert.ok(l.nombre && l.descripcion);
+  assert.equal(cuerpo.total, 830);
+});
+
+test('confirmar · mismos totales que /api/presupuesto en todas las combinaciones equivalentes', async () => {
+  for (const tipo of ['landing', 'corporativa']) {
+    for (const paginas of [1, 2, 7, 20]) {
+      for (const formulario of [false, true]) {
+        for (const segundoIdioma of [false, true]) {
+          const esperado = calcularPresupuesto({ tipo, paginas, formulario, segundoIdioma });
+          const servicios = [{ id: tipo }, { id: 'paginasAdicionales' }];
+          if (formulario) servicios.push({ id: 'formulario' });
+          if (segundoIdioma) servicios.push({ id: 'segundoIdioma' });
+          const res = await confirmar({ servicios, paginas });
+          assert.equal(res.status, 200);
+          assert.equal((await res.json()).total, esperado.total, JSON.stringify({ tipo, paginas, formulario, segundoIdioma }));
+        }
+      }
+    }
+  }
+});
+
+test('confirmar · ignora importes, totales y precios enviados por el cliente', async () => {
+  const res = await confirmar({
+    total: 1,
+    servicios: [{ id: 'landing', importe: 0, precio: 0 }, { id: 'formulario', importe: -50 }],
+  });
+  assert.equal(res.status, 200);
+  const cuerpo = await res.json();
+  assert.deepEqual(cuerpo.lineas.map((l) => l.importe), [300, 80]);
+  assert.equal(cuerpo.total, 380);
+});
+
+test('confirmar · id desconocido, "__proto__", repetido o mal formado → 400', async () => {
+  const casos = [
+    [{ id: 'landing' }, { id: 'seo' }],
+    [{ id: '__proto__' }],
+    [{ id: 'landing' }, { id: 'landing' }],
+    [{ id: 5 }],
+    [{}],
+  ];
+  for (const servicios of casos) {
+    const res = await confirmar({ servicios });
+    assert.equal(res.status, 400, JSON.stringify(servicios));
+    const cuerpo = await res.json();
+    assert.equal(cuerpo.error, 'Solicitud no válida');
+    assert.ok(cuerpo.detalles.length > 0);
+  }
+});
+
+test('confirmar · dos bases a la vez, ninguna base o lista vacía → 400', async () => {
+  let res = await confirmar({ servicios: [{ id: 'landing' }, { id: 'corporativa' }] });
+  assert.equal(res.status, 400);
+  assert.match((await res.json()).detalles[0], /un servicio base/);
+  res = await confirmar({ servicios: [{ id: 'formulario' }] });
+  assert.equal(res.status, 400);
+  assert.match((await res.json()).detalles[0], /Falta un servicio base/);
+  res = await confirmar({ servicios: [] });
+  assert.equal(res.status, 400);
+});
+
+test('confirmar · páginas adicionales sin "paginas" o con valor inválido → 400 con mensaje claro', async () => {
+  const base = [{ id: 'landing' }, { id: 'paginasAdicionales' }];
+  let res = await confirmar({ servicios: base });
+  assert.equal(res.status, 400);
+  assert.match((await res.json()).detalles[0], /Falta el parámetro "paginas"/);
+  for (const paginas of [0, 21, 2.5, '4']) {
+    res = await confirmar({ servicios: base, paginas });
+    assert.equal(res.status, 400, String(paginas));
+  }
+});
+
+test('confirmar · "paginas" sin páginas adicionales se ignora', async () => {
+  const res = await confirmar({ servicios: [{ id: 'landing' }], paginas: 999 });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).total, 300);
+});
+
+test('confirmar · cuerpo no objeto, Content-Type incorrecto y JSON roto → 400', async () => {
+  assert.equal((await confirmar([])).status, 400);
+  let res = await fetch(`${URL_BASE}/api/presupuesto/confirmar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: 'x',
+  });
+  assert.equal(res.status, 400);
+  res = await fetch(`${URL_BASE}/api/presupuesto/confirmar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{roto',
+  });
+  assert.equal(res.status, 400);
+});

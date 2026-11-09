@@ -1,7 +1,8 @@
 import express from 'express';
 import { TARIFAS, MONEDA } from './tarifas.js';
-import { validarSolicitud } from './validacion.js';
-import { calcularPresupuesto } from './presupuesto.js';
+import { validarSolicitud, validarSeleccion } from './validacion.js';
+import { calcularPresupuesto, calcularSeleccion } from './presupuesto.js';
+import { catalogoPublico } from './catalogo.js';
 
 export const app = express();
 
@@ -33,6 +34,27 @@ app.post('/api/presupuesto', (req, res) => {
   }
 
   res.status(200).json(calcularPresupuesto(resultado.datos));
+});
+
+// GET /api/catalogo → servicios que se pueden presupuestar.
+app.get('/api/catalogo', (req, res) => {
+  res.json(catalogoPublico());
+});
+
+// POST /api/presupuesto/confirmar → líneas y total de una selección de servicios.
+// Los importes son SIEMPRE del servidor: de lo que envíe el cliente solo se leen los ids.
+app.post('/api/presupuesto/confirmar', (req, res) => {
+  if (!req.is('application/json')) {
+    return res.status(400).json({
+      error: 'Solicitud no válida',
+      detalles: ['La cabecera Content-Type debe ser application/json.'],
+    });
+  }
+  const resultado = validarSeleccion(req.body);
+  if (!resultado.ok) {
+    return res.status(400).json({ error: 'Solicitud no válida', detalles: resultado.errores });
+  }
+  res.status(200).json(calcularSeleccion(resultado.datos));
 });
 
 // Cualquier otra ruta → 404 en JSON.
