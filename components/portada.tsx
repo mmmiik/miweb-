@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowDownIcon, ArrowRightIcon, ChartBarIcon, SparkleIcon } from "@phosphor-icons/react"
+import { ArrowDownIcon, ArrowRightIcon, ChartBarIcon } from "@phosphor-icons/react"
 
 import { Escalera } from "@/components/escalera"
 import { Button } from "@/components/ui/button"
@@ -24,13 +24,6 @@ export function Portada({
   return (
     <div className="mx-auto w-full max-w-6xl space-y-24 sm:space-y-32">
       <section className="relative flex min-h-[calc(100svh-9rem)] flex-col items-center justify-center gap-7 py-10 text-center">
-        <span
-          className={`${entra} inline-flex min-h-8 items-center gap-2 rounded-full border border-black/10 bg-white/60 px-3.5 font-mono text-[0.6875rem] font-medium tracking-widest text-muted-foreground uppercase backdrop-blur dark:border-white/10 dark:bg-white/5`}
-        >
-          <SparkleIcon weight="fill" className="size-3.5 text-primary" aria-hidden />
-          Presupuestos web con IA
-        </span>
-
         <h1 className="flex flex-col items-center leading-[0.9] tracking-tighter">
           <span
             style={{ animationDelay: "100ms" }}
