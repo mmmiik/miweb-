@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { SpinnerGapIcon, TagIcon } from "@phosphor-icons/react"
+import { ArrowRightIcon, SpinnerGapIcon, TagIcon } from "@phosphor-icons/react"
 
 import { Aviso } from "@/components/aviso"
 import { Caja } from "@/components/caja"
@@ -27,7 +27,7 @@ const GRUPOS: { clase: ClaseServicio; titulo: string; nota: string }[] = [
   { clase: "extra", titulo: "Extras", nota: "Precio fijo, se pueden combinar." },
 ]
 
-export function CatalogoView() {
+export function CatalogoView({ onEmpezar }: { onEmpezar: () => void }) {
   const [catalogo, setCatalogo] = React.useState<Catalogo | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [cargando, setCargando] = React.useState(true)
@@ -121,6 +121,15 @@ export function CatalogoView() {
             </Caja>
           )
         })}
+
+      {catalogo && (
+        <div className="flex justify-end">
+          <Button size="lg" onClick={onEmpezar}>
+            Pedir sugerencias al asistente
+            <ArrowRightIcon weight="bold" aria-hidden />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

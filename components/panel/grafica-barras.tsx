@@ -5,7 +5,6 @@ import { ChartBarIcon, TableIcon } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import { formatearEuros, type LineaPresupuesto } from "@/lib/api"
-import { cn } from "@/lib/utils"
 
 const NOMBRE_CLASE: Record<string, string> = {
   base: "Servicio base",
@@ -13,14 +12,12 @@ const NOMBRE_CLASE: Record<string, string> = {
   extra: "Extra",
 }
 
-// Espacio reservado a la derecha de cada barra para escribir el importe en su punta.
-const RESERVA = "6.5rem"
-
 /**
  * Barras horizontales ordenadas de mayor a menor importe, de un solo tono (el acento):
- * comparan los importes sobre una misma línea base. Cada barra dice de dónde sale
- * (clase de servicio y cálculo del servidor), de modo que la identidad nunca depende solo
- * del color. Incluye una vista alternativa en tabla.
+ * comparan los importes sobre una misma línea base y todas las cifras van alineadas a la
+ * derecha, en una columna. Cada barra dice de dónde sale (clase de servicio y cálculo del
+ * servidor), de modo que la identidad nunca depende solo del color. Incluye una vista
+ * alternativa en tabla.
  *
  * Los importes vienen del servidor; aquí solo se dibujan.
  */
@@ -104,25 +101,16 @@ export function GraficaBarras({
                 className="space-y-1.5"
               >
                 <p className="texto-encabezado">{l.nombre}</p>
-                <div className="relative h-5" role="presentation">
-                  {/* Pista tenue sobre la misma línea base */}
-                  <div
-                    className="absolute inset-y-[7px] left-0 rounded-r-[4px] bg-black/[0.06] dark:bg-white/10"
-                    style={{ right: RESERVA }}
-                  />
-                  {/* Barra: base recta, extremo de datos redondeado 4 px */}
-                  <div
-                    className={cn(
-                      "absolute inset-y-[5px] left-0 rounded-r-[4px] bg-primary",
-                      "transition-[width] duration-700 ease-out"
-                    )}
-                    style={{ width: `calc((100% - ${RESERVA}) * ${fraccion})`, minWidth: l.importe > 0 ? 4 : 0 }}
-                  />
-                  {/* Valor en la punta */}
-                  <span
-                    className="absolute top-0 flex h-5 items-center text-sm font-semibold tabular-nums transition-[left] duration-700 ease-out"
-                    style={{ left: `calc((100% - ${RESERVA}) * ${fraccion} + 0.5rem)` }}
-                  >
+                <div className="flex items-center gap-4" role="presentation">
+                  {/* Pista tenue y barra sobre la misma línea base (base recta, extremo redondeado 4 px) */}
+                  <div className="relative h-2.5 flex-1 overflow-hidden rounded-r-[4px] bg-black/[0.06] dark:bg-white/10">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-r-[4px] bg-primary transition-[width] duration-700 ease-out"
+                      style={{ width: `${fraccion * 100}%`, minWidth: l.importe > 0 ? 4 : 0 }}
+                    />
+                  </div>
+                  {/* Importe: columna fija, alineada a la derecha del todo */}
+                  <span className="w-28 shrink-0 text-right text-sm font-semibold tabular-nums">
                     {euros(l.importe)}
                   </span>
                 </div>

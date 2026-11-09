@@ -24,7 +24,7 @@ Un único proyecto: interfaz **Next.js** + API **Node.js / Express (JavaScript)*
 
 ## 1. Cómo funciona
 
-La página tiene **dos partes** (más el Catálogo y las Pruebas):
+Se abre con una **portada** (hero con una rejilla de ondas interactiva) y la página tiene **dos partes** (más el Catálogo y las Pruebas):
 
 **Asistente de propuestas** (4 pasos)
 
@@ -46,7 +46,7 @@ Hay **ejemplos ya creados** para ver cómo reacciona la IA: *Clara* (restaurante
 ## 2. Estructura del proyecto
 
 ```
-├── app/ components/ lib/ public/     ← interfaz (Next.js + Tailwind v4 + shadcn/ui)
+├── app/ components/ lib/ public/     ← interfaz (Next.js + Tailwind v4 + shadcn/ui); portada, asistente, panel…
 ├── server/                           ← API (Node.js + Express + JavaScript, ESM)
 │   ├── app.js                        ← crearApp(): rutas y manejo de errores (exporta `app`)
 │   ├── server.js                     ← arranque SOLO local (app.listen en :3000)
@@ -233,13 +233,16 @@ Un solo proyecto y una sola URL: Next.js se sirve como siempre y `api/index.js` 
 
 ## 11. Interfaz
 
-Interfaz estilo iOS: vidrio sutil sobre un fondo de manchas difuminadas, tipografía Geist, iconos Phosphor, modo claro y oscuro (botón o tecla `d`) y un único acento azul. Cuatro secciones:
+Interfaz estilo iOS: vidrio sutil sobre un fondo de manchas difuminadas, tipografía Geist, iconos Phosphor, modo claro y oscuro (botón o tecla `d`) y un único acento azul. Cinco secciones, todas enlazadas entre sí (la portada lleva al asistente y al panel, el asistente termina en el panel, el panel vuelve al asistente y el catálogo ofrece pedir sugerencias):
 
 | Sección | Qué muestra |
 |---|---|
+| **Inicio** | Portada con la rejilla de ondas de [React Bits](https://reactbits.dev/backgrounds/ripple-grid) (`RippleGrid`, WebGL: reacciona al ratón y al clic; respeta «reducir movimiento»), dos accesos («Empezar con el asistente» y «Ver el panel») y el resumen del recorrido en tres pasos. |
 | **Asistente** | Los 4 pasos (§1): idea con ejemplos y contador de caracteres (los errores 400 los muestra el servidor); sugerencias de la IA con su justificación y los pendientes en aviso ámbar; selección con lo sugerido y el resto del catálogo, y los datos que faltan (el nº de páginas bloquea «Ver mi presupuesto» hasta completarlo); presupuesto con vista previa del PDF, «Aceptar y descargar» y «Ver en el panel». Si falla la IA hay un estado de error con «Reintentar» que conserva lo escrito. |
 | **Panel** | «Mi caso» y tres ejemplos: total, composición del total, **gráfica de barras** de los importes (de mayor a menor, un solo tono, valor en la punta y origen de cada barra escrito debajo; vista alternativa en tabla) y descarga del PDF. |
 | **Catálogo** | `GET /api/catalogo`: servicios, qué incluyen y su precio. |
 | **Pruebas** | Marcador X/9 y una tarjeta por cada caso de `POST /api/presupuesto`. |
 
 El navegador **no calcula ningún importe**: solo muestra lo que devuelve el servidor.
+
+> `components/RippleGrid.jsx` es el componente de React Bits instalado con `npx shadcn@latest add @react-bits/RippleGrid-JS-CSS` (registro `@react-bits` en `components.json`). Lleva dos ajustes locales, comentados en el código: actualizar el ref en un efecto (regla `react-hooks/refs`) y no destruir el contexto WebGL mientras el canvas siga en la página (en modo estricto de React dejaba la rejilla rota). `RippleGrid.d.ts` aporta los tipos.

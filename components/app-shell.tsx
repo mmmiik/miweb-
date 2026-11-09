@@ -4,12 +4,14 @@ import * as React from "react"
 import {
   ChartBarIcon,
   FlaskIcon,
+  HouseIcon,
   ReceiptIcon,
   SparkleIcon,
   TagIcon,
 } from "@phosphor-icons/react"
 
 import { CatalogoView } from "@/components/catalogo-view"
+import { Portada } from "@/components/portada"
 import { PanelView } from "@/components/panel/panel-view"
 import { Flujo } from "@/components/presupuesto/flujo"
 import type { CasoPanel } from "@/components/presupuesto/tipos"
@@ -18,10 +20,11 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { obtenerEstado } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
-type Vista = "asistente" | "panel" | "catalogo" | "pruebas"
+type Vista = "inicio" | "asistente" | "panel" | "catalogo" | "pruebas"
 type Conexion = "comprobando" | "conectada" | "desconectada"
 
 const VISTAS = [
+  { id: "inicio", nombre: "Inicio", Icono: HouseIcon },
   { id: "asistente", nombre: "Asistente", Icono: SparkleIcon },
   { id: "panel", nombre: "Panel", Icono: ChartBarIcon },
   { id: "catalogo", nombre: "Catálogo", Icono: TagIcon },
@@ -29,10 +32,15 @@ const VISTAS = [
 ] as const
 
 export function AppShell() {
-  const [vista, setVista] = React.useState<Vista>("asistente")
+  const [vista, setVista] = React.useState<Vista>("inicio")
   const [caso, setCaso] = React.useState<CasoPanel | null>(null)
   const [conexion, setConexion] = React.useState<Conexion>("comprobando")
   const [ms, setMs] = React.useState<number | null>(null)
+
+  function irA(destino: Vista) {
+    setVista(destino)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
   const comprobar = React.useCallback(async () => {
     setConexion("comprobando")
@@ -51,12 +59,17 @@ export function AppShell() {
     <div className="min-h-svh">
       <header className="sticky top-0 z-20 px-3 pt-3 sm:px-6 sm:pt-4">
         <div className="vidrio mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl px-3 py-2 sm:px-4">
-          <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => irA("inicio")}
+            aria-label="Presupuesta mi web, ir al inicio"
+            className="foco -ml-1 hidden min-h-11 items-center gap-2.5 rounded-xl px-1 sm:flex"
+          >
             <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <ReceiptIcon weight="bold" className="size-4" aria-hidden />
             </span>
-            <span className="texto-encabezado hidden sm:block">Presupuesta mi web</span>
-          </div>
+            <span className="texto-encabezado hidden lg:block">Presupuesta mi web</span>
+          </button>
 
           <nav
             aria-label="Secciones"
@@ -66,7 +79,7 @@ export function AppShell() {
               <button
                 key={id}
                 type="button"
-                onClick={() => setVista(id)}
+                onClick={() => irA(id)}
                 aria-label={nombre}
                 aria-current={vista === id ? "page" : undefined}
                 className={cn(
@@ -110,13 +123,15 @@ export function AppShell() {
       </header>
 
       <main className="px-4 py-8 sm:px-6 sm:py-10">
+        {vista === "inicio" && (
+          <Portada onEmpezar={() => irA("asistente")} onVerPanel={() => irA("panel")} />
+        )}
         {/* El flujo se mantiene montado para no perder lo escrito al cambiar de sección. */}
         <div hidden={vista !== "asistente"}>
           <Flujo
             onVerEnPanel={(c) => {
               setCaso(c)
-              setVista("panel")
-              window.scrollTo({ top: 0, behavior: "smooth" })
+              irA("panel")
             }}
           />
         </div>
@@ -124,10 +139,10 @@ export function AppShell() {
           <PanelView
             key={caso?.numero ?? "sin-caso"}
             caso={caso}
-            onIrAsistente={() => setVista("asistente")}
+            onIrAsistente={() => irA("asistente")}
           />
         )}
-        {vista === "catalogo" && <CatalogoView />}
+        {vista === "catalogo" && <CatalogoView onEmpezar={() => irA("asistente")} />}
         {vista === "pruebas" && <PruebasPanel conexion={conexion} ms={ms} />}
       </main>
     </div>
