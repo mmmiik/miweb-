@@ -116,7 +116,6 @@ export interface SeleccionPdf {
   resumen: string
   servicios: { id: string }[]
   paginas?: number
-  pendientes: string[]
 }
 
 const MENSAJE_SIN_API =

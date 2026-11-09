@@ -31,7 +31,6 @@ export type CatalogoPorId = Record<string, ServicioCatalogo>
 export interface CasoPanel {
   cliente: string
   resumen: string
-  pendientes: string[]
   confirmacion: Confirmacion
   pdfBlob: Blob
   numero: string

@@ -51,7 +51,6 @@ test('PDF · es un application/pdf válido con cabecera, cliente, resumen, tabla
       resumen: 'Restaurante con carta, reservas y dos idiomas. Ñandú, acción y ¿qué tal?',
       servicios: [{ id: 'corporativa' }, { id: 'paginasAdicionales' }, { id: 'formulario' }, { id: 'segundoIdioma' }],
       paginas: 5,
-      pendientes: ['¿Necesita pasarela de pago?'],
     });
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-type'), 'application/pdf');
@@ -86,25 +85,30 @@ test('PDF · es un application/pdf válido con cabecera, cliente, resumen, tabla
       'Extras',
       '58 %',
       '1.030,00 €',
-      'ACLARACIONES Y ASPECTOS PENDIENTES DE CONCRETAR',
-      '¿Necesita pasarela de pago?',
       'Importes calculados por el servidor. Sin impuestos aplicados.',
       '1/1',
     ]) {
       assert.ok(contiene(texto, esperado), `falta «${esperado}» en el PDF:\n${texto}`);
     }
-    // No se inventan plazos, validez ni condiciones.
+    // No se inventan plazos, validez ni condiciones, y no hay nada «pendiente de aclarar».
     assert.doesNotMatch(texto, /plazo|validez|v[aá]lido hasta|entrega|condiciones/i);
+    assert.doesNotMatch(texto, /aclaraci|pendiente|concretar/i);
   });
 });
 
-test('PDF · sin pendientes indica "Sin aspectos pendientes"', async () => {
+test('PDF · no lleva sección de aclaraciones ni pendientes, ni siquiera si el cliente los envía', async () => {
   await conServidor({}, async ({ post }) => {
-    const res = await post('/api/presupuesto/pdf', { cliente: CLIENTE, resumen: 'Una página.', servicios: [{ id: 'landing' }] });
+    const res = await post('/api/presupuesto/pdf', {
+      cliente: CLIENTE,
+      resumen: 'Una página.',
+      servicios: [{ id: 'landing' }],
+      pendientes: ['Pendiente inventado por el cliente'],
+    });
     assert.equal(res.status, 200);
-    const { texto } = await textoDelPdf(Buffer.from(await res.arrayBuffer()));
-    assert.ok(contiene(texto, 'Sin aspectos pendientes'));
+    const { texto, paginas } = await textoDelPdf(Buffer.from(await res.arrayBuffer()));
+    assert.equal(paginas, 1);
     assert.ok(contiene(texto, '300,00 €'));
+    assert.doesNotMatch(texto, /aclaraci|pendiente|concretar|inventado/i);
   });
 });
 
@@ -117,7 +121,6 @@ test('PDF · ignora importes, totales y líneas enviados por el cliente y recalc
       importe: 1,
       lineas: [{ nombre: 'Regalo', importe: 0 }],
       servicios: [{ id: 'landing', importe: 0, precio: 0 }, { id: 'formulario', importe: -999 }],
-      pendientes: [],
     });
     assert.equal(res.status, 200);
     const { texto } = await textoDelPdf(Buffer.from(await res.arrayBuffer()));
@@ -136,9 +139,7 @@ test('PDF · entradas inválidas → 400 en JSON (id desconocido, dos bases, sin
       { ...valido, servicios: [{ id: 'landing' }, { id: 'corporativa' }] },
       { ...valido, servicios: [{ id: 'landing' }, { id: 'paginasAdicionales' }] },
       { ...valido, servicios: [] },
-      { ...valido, pendientes: 'no es lista' },
-      { ...valido, pendientes: [42] },
-      { ...valido, resumen: 'a'.repeat(1001) },
+      { ...valido, resumen: 'a'.repeat(601) },
     ];
     for (const caso of casos) {
       const res = await post('/api/presupuesto/pdf', caso);
@@ -149,21 +150,19 @@ test('PDF · entradas inválidas → 400 en JSON (id desconocido, dos bases, sin
   });
 });
 
-test('PDF · muchas aclaraciones largas: se pagina y el pie numera x/y', async () => {
+test('PDF · con el resumen más largo y todos los servicios sigue en una página, con pie 1/1', async () => {
   await conServidor({}, async ({ post }) => {
-    const pendientes = Array.from({ length: 10 }, (_, i) => `Aclaración ${i + 1}: ${'texto de relleno '.repeat(14)}`.trim());
     const res = await post('/api/presupuesto/pdf', {
-      cliente: CLIENTE,
-      resumen: 'r '.repeat(450).trim(),
+      cliente: 'C'.repeat(100),
+      resumen: 'resumen largo '.repeat(70).trim().slice(0, 600),
       servicios: [{ id: 'corporativa' }, { id: 'paginasAdicionales' }, { id: 'formulario' }, { id: 'segundoIdioma' }],
       paginas: 20,
-      pendientes,
     });
     assert.equal(res.status, 200);
     const { texto, paginas } = await textoDelPdf(Buffer.from(await res.arrayBuffer()));
-    assert.ok(paginas >= 2, `se esperaban ≥2 páginas y hay ${paginas}`);
-    assert.ok(contiene(texto, `1/${paginas}`) && contiene(texto, `${paginas}/${paginas}`));
-    assert.ok(contiene(texto, 'Aclaración 10'));
+    assert.equal(paginas, 1);
+    assert.ok(contiene(texto, '1/1'));
+    assert.ok(contiene(texto, '1.780,00 €'));
   });
 });
 
@@ -188,7 +187,6 @@ test('Escenario 6 · el usuario modifica la propuesta y el PDF refleja la selecc
             { id: 'formulario', justificacion: 'Reservas.' },
             { id: 'segundoIdioma', justificacion: 'Dos idiomas.' },
           ],
-          pendientes: ['¿Quiere pago online? Pendiente de valorar.'],
         }),
       }),
     },
@@ -214,7 +212,6 @@ test('Escenario 6 · el usuario modifica la propuesta y el PDF refleja la selecc
       resumen: propuesta.resumen,
       servicios: seleccion,
       paginas,
-      pendientes: propuesta.pendientes,
     });
     assert.equal(res.status, 200);
     const { texto } = await textoDelPdf(Buffer.from(await res.arrayBuffer()));
@@ -229,6 +226,7 @@ test('Escenario 6 · el usuario modifica la propuesta y el PDF refleja la selecc
       assert.ok(contiene(texto, l.nombre));
       assert.ok(contiene(texto, new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(l.importe)));
     }
-    assert.ok(contiene(texto, '¿Quiere pago online? Pendiente de valorar.'));
+    // El PDF final no deja nada por aclarar.
+    assert.doesNotMatch(texto, /aclaraci|pendiente|concretar/i);
   });
 });

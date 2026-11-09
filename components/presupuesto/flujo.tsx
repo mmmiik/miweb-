@@ -211,7 +211,6 @@ export function Flujo({ onVerEnPanel }: { onVerEnPanel: (caso: CasoPanel) => voi
             resumen: datos.resumen,
             servicios,
             paginas: paginasEnviadas,
-            pendientes: datos.pendientes,
           },
           ctrl.signal
         ),
@@ -244,7 +243,6 @@ export function Flujo({ onVerEnPanel }: { onVerEnPanel: (caso: CasoPanel) => voi
     onVerEnPanel({
       cliente: datosPropuesta.cliente,
       resumen: datosPropuesta.resumen,
-      pendientes: datosPropuesta.pendientes,
       confirmacion: calculo.confirmacion,
       pdfBlob: calculo.pdfBlob,
       numero: calculo.numero,

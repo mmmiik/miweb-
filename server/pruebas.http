@@ -108,6 +108,5 @@ Content-Type: application/json
 {
   "cliente": "Restaurante La Cepa (ficticio)",
   "resumen": "Web con carta, reservas y dos idiomas.",
-  "servicios": [{ "id": "corporativa" }, { "id": "formulario" }],
-  "pendientes": ["¿Quiere pago online? Pendiente de valorar."]
+  "servicios": [{ "id": "corporativa" }, { "id": "formulario" }]
 }

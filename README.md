@@ -41,7 +41,7 @@ Hay **ejemplos ya creados** para ver cómo reacciona la IA: *Clara* (restaurante
 
 **Panel**: el presupuesto desglosado. Muestra **Mi caso** (lo que acabas de crear en el asistente) y tres presupuestos de ejemplo que el servidor calcula al momento, sin IA. Incluye el total, la composición (servicio base / páginas / extras con su porcentaje) y una **gráfica de barras** con el importe de cada servicio y de dónde sale (tarifa fija, `4 × 50 €`…), con vista alternativa en tabla y descarga del PDF.
 
-**La IA solo propone y redacta.** Devuelve ids del catálogo, una justificación por servicio y una lista de «pendientes de aclarar». No decide precios, plazos ni compromisos: el servidor valida cada id y calcula todos los importes. Cualquier cambio de servicios invalida la vista previa y se vuelve a calcular.
+**La IA solo propone y redacta.** Devuelve ids del catálogo, una justificación por servicio y una lista de «pendientes de aclarar» que se muestra en el paso de sugerencias para que el usuario lo tenga todo claro antes de seguir (no suman importe y **no aparecen en el PDF**). No decide precios, plazos ni compromisos: el servidor valida cada id y calcula todos los importes. Cualquier cambio de servicios invalida la vista previa y se vuelve a calcular.
 
 ## 2. Estructura del proyecto
 
@@ -105,7 +105,7 @@ Abre **http://localhost:3001**. Next reenvía `/api/*` a Express (`rewrites` de 
 | GET | `/api/catalogo` | Servicios disponibles | `200 {moneda, servicios[]}` |
 | POST | `/api/propuesta` | `{cliente, descripcion}` → la IA propone servicios | `200` · `400` · `429` · `502` · `504` |
 | POST | `/api/presupuesto/confirmar` | `{servicios:[{id}], paginas?}` → líneas y total | `200` · `400` |
-| POST | `/api/presupuesto/pdf` | `{cliente, resumen, servicios, paginas, pendientes}` → PDF | `200 application/pdf` · `400` |
+| POST | `/api/presupuesto/pdf` | `{cliente, resumen, servicios, paginas}` → PDF | `200 application/pdf` · `400` |
 
 Los errores son siempre JSON `{ "error": "...", "detalles": ["..."] }`. Cualquier otra ruta devuelve `404` JSON.
 
@@ -151,7 +151,7 @@ Si falta un parámetro, se pide al usuario; **nunca se inventa**. Sin impuestos 
 
 ## 8. El PDF y la decisión de librería
 
-Se genera **en el servidor** con [`pdfmake`](https://pdfmake.github.io/docs/) (plantilla en [server/pdf/plantilla.js](server/pdf/plantilla.js)): A4, fondo blanco, márgenes amplios, Roboto (con tildes), tinta casi negra y grises, líneas de 0,5 pt y un único acento azul `#0A84FF` en la línea bajo la cabecera y en el total. Sin logos ni rellenos. Incluye cabecera (marca, «PRESUPUESTO», nº y fecha), cliente, resumen, tabla de servicios con **«Descripción y cálculo»** (cada línea explica de dónde sale su importe) e importes a la derecha, **«Composición del total»** (servicio base, páginas y extras con barra y porcentaje, en grises), total, «Aclaraciones y aspectos pendientes de concretar» (o «Sin aspectos pendientes») y pie «Importes calculados por el servidor. Sin impuestos aplicados.» con paginación x/y. No contiene plazos, validez ni condiciones que no existan.
+Se genera **en el servidor** con [`pdfmake`](https://pdfmake.github.io/docs/) (plantilla en [server/pdf/plantilla.js](server/pdf/plantilla.js)): A4, fondo blanco, márgenes amplios, Roboto (con tildes), tinta casi negra y grises, líneas de 0,5 pt y un único acento azul `#0A84FF` en la línea bajo la cabecera y en el total. Sin logos ni rellenos. Incluye cabecera (marca, «PRESUPUESTO», nº y fecha), cliente, resumen, tabla de servicios con **«Descripción y cálculo»** (cada línea explica de dónde sale su importe) e importes a la derecha, **«Composición del total»** (servicio base, páginas y extras con barra y porcentaje, en grises), total y pie «Importes calculados por el servidor. Sin impuestos aplicados.» con paginación x/y. **No lleva sección de aclaraciones ni de pendientes**: el PDF final es siempre un presupuesto cerrado. Tampoco contiene plazos, validez ni condiciones que no existan.
 
 | Opción | A favor | En contra | Decisión |
 |---|---|---|---|
@@ -238,7 +238,7 @@ Interfaz estilo iOS: vidrio sutil sobre la rejilla de fondo, tipografía **Geist
 | Sección | Qué muestra |
 |---|---|
 | **Inicio** | Portada. El **fondo de toda la web** es la rejilla de ondas de [React Bits](https://reactbits.dev/backgrounds/ripple-grid) (`RippleGrid`, WebGL, **estática**: sin reacción al ratón ni al clic y sin gasto de GPU una vez dibujada). Titular con tres pesos de Geist (fino, extra-negrita y negro) y subrayado que se dibuja; y una **escalera** de tres peldaños en zigzag (contenido-visual, símbolo-contenido-visual, visual-contenido) con animaciones al hacer scroll, escritura automática, interruptores que se activan solos y barras que crecen. |
-| **Asistente** | Los 4 pasos (§1): idea con ejemplos y contador de caracteres (los errores 400 los muestra el servidor); sugerencias de la IA con su justificación y los pendientes en aviso ámbar; selección con lo sugerido y el resto del catálogo, y los datos que faltan (el nº de páginas bloquea «Ver mi presupuesto» hasta completarlo); presupuesto con vista previa del PDF, «Aceptar y descargar» y «Ver en el panel». Si falla la IA hay un estado de error con «Reintentar» que conserva lo escrito. |
+| **Asistente** | Los 4 pasos (§1): idea con ejemplos y contador de caracteres (los errores 400 los muestra el servidor); sugerencias de la IA con su justificación y los pendientes en aviso ámbar (solo informan: no van al PDF); selección con lo sugerido y el resto del catálogo, y los datos que faltan (el nº de páginas bloquea «Ver mi presupuesto» hasta completarlo); presupuesto con vista previa del PDF, «Aceptar y descargar» y «Ver en el panel». Si falla la IA hay un estado de error con «Reintentar» que conserva lo escrito. |
 | **Panel** | «Mi caso» y tres ejemplos: total, composición del total, **gráfica de barras** de los importes (de mayor a menor, un solo tono, valor en la punta y origen de cada barra escrito debajo; vista alternativa en tabla) y descarga del PDF. |
 | **Catálogo** | `GET /api/catalogo`: servicios, qué incluyen y su precio. |
 | **Pruebas** | Marcador X/9 y una tarjeta por cada caso de `POST /api/presupuesto`. |

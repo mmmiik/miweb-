@@ -116,7 +116,7 @@ export function PasoSugerencias({
             ))}
           </ul>
           <p className="mt-2 text-xs opacity-80">
-            Aparecerán en el PDF como aspectos pendientes de concretar. No suman importe.
+            Son dudas para que lo tengas todo claro antes de continuar. No suman importe y no aparecen en el PDF.
           </p>
         </Aviso>
       )}

@@ -39,7 +39,7 @@ export function generarNumero(fecha = new Date(), aleatorio = Math.random) {
 const etiqueta = (texto) => ({ text: texto.toUpperCase(), style: 'etiqueta' });
 
 /**
- * @param {{ cliente: string, resumen: string, pendientes: string[],
+ * @param {{ cliente: string, resumen: string,
  *           lineas: {nombre: string, descripcion: string, calculo: string, importe: number}[],
  *           composicion: {nombre: string, importe: number, porcentaje: number}[],
  *           total: number, moneda: string }} datos
@@ -65,8 +65,6 @@ export function construirDocumento(datos, { numero, fecha }) {
     },
     { text: euros.format(l.importe), alignment: 'right', noWrap: true },
   ]);
-
-  const pendientes = datos.pendientes.map(limpiar).filter(Boolean);
 
   return {
     info: {
@@ -162,21 +160,10 @@ export function construirDocumento(datos, { numero, fecha }) {
       {
         unbreakable: true,
         alignment: 'right',
-        margin: [0, 14, 0, 18],
+        margin: [0, 14, 0, 0],
         stack: [
           { text: 'TOTAL', style: 'totalEtiqueta' },
           { text: euros.format(datos.total), style: 'totalImporte', margin: [0, 2, 0, 0] },
-        ],
-      },
-
-      // Aclaraciones
-      {
-        unbreakable: true,
-        stack: [
-          etiqueta('Aclaraciones y aspectos pendientes de concretar'),
-          pendientes.length > 0
-            ? { ul: pendientes, markerColor: GRIS, color: TINTA, margin: [0, 2, 0, 0] }
-            : { text: 'Sin aspectos pendientes', color: GRIS },
         ],
       },
     ],

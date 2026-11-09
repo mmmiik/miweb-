@@ -8,7 +8,7 @@ import { construirDocumento, generarNumero } from './plantilla.js';
 let fuentesCargadas = false;
 
 /**
- * @param {{ cliente: string, resumen: string, ids: string[], paginas?: number, pendientes: string[] }} datos
+ * @param {{ cliente: string, resumen: string, ids: string[], paginas?: number }} datos
  * @param {{ fecha?: Date, numero?: string }} [opciones]  (inyectables para los tests)
  * @returns {Promise<{ buffer: Buffer, numero: string, total: number }>}
  */
@@ -22,7 +22,7 @@ export async function generarPdf(datos, { fecha = new Date(), numero = generarNu
   }
   const { lineas, composicion, total, moneda } = calcularSeleccion({ ids: datos.ids, paginas: datos.paginas });
   const definicion = construirDocumento(
-    { cliente: datos.cliente, resumen: datos.resumen, pendientes: datos.pendientes, lineas, composicion, total, moneda },
+    { cliente: datos.cliente, resumen: datos.resumen, lineas, composicion, total, moneda },
     { numero, fecha },
   );
   const buffer = Buffer.from(await pdfmake.createPdf(definicion).getBuffer());

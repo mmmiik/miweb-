@@ -149,13 +149,11 @@ export function validarPropuesta(cuerpo) {
   return errores.length > 0 ? { ok: false, errores } : { ok: true, datos: { cliente, descripcion } };
 }
 
-export const RESUMEN_MAX = 1000;
-export const PENDIENTES_MAX = 10;
-export const PENDIENTE_MAX = 300;
+export const RESUMEN_MAX = 600; // igual que el máximo del resumen de la IA: así el PDF cabe siempre en una página
 
 /**
  * Valida POST /api/presupuesto/pdf. Los importes que pudieran venir en el cuerpo
- * no se leen: solo cliente, resumen, ids de servicios, paginas y pendientes.
+ * no se leen: solo cliente, resumen, ids de servicios y paginas.
  * @param {unknown} cuerpo
  */
 export function validarPdf(cuerpo) {
@@ -175,22 +173,9 @@ export function validarPdf(cuerpo) {
     else resumen = cuerpo.resumen.trim();
   }
 
-  const pendientes = [];
-  if (cuerpo.pendientes !== undefined && cuerpo.pendientes !== null) {
-    if (!Array.isArray(cuerpo.pendientes)) errores.push('"pendientes" debe ser una lista de textos.');
-    else if (cuerpo.pendientes.length > PENDIENTES_MAX) errores.push(`"pendientes" no puede tener más de ${PENDIENTES_MAX} elementos.`);
-    else {
-      for (const p of cuerpo.pendientes) {
-        if (typeof p !== 'string') errores.push('Cada elemento de "pendientes" debe ser un texto.');
-        else if (p.trim().length > PENDIENTE_MAX) errores.push(`Cada aspecto pendiente puede tener como máximo ${PENDIENTE_MAX} caracteres.`);
-        else if (p.trim() !== '') pendientes.push(p.trim());
-      }
-    }
-  }
-
   const seleccion = validarSeleccion({ servicios: cuerpo.servicios, paginas: cuerpo.paginas });
   if (!seleccion.ok) errores.push(...seleccion.errores);
 
   if (errores.length > 0) return { ok: false, errores };
-  return { ok: true, datos: { cliente, resumen, pendientes, ...seleccion.datos } };
+  return { ok: true, datos: { cliente, resumen, ...seleccion.datos } };
 }

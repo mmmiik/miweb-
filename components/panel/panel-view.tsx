@@ -28,7 +28,6 @@ interface Vista {
   titulo: string
   cliente: string
   resumen: string
-  pendientes: string[]
   confirmacion: Confirmacion
 }
 
@@ -72,7 +71,6 @@ export function PanelView({
           titulo: "Mi caso",
           cliente: caso.cliente,
           resumen: caso.resumen,
-          pendientes: caso.pendientes,
           confirmacion: caso.confirmacion,
         }
       : ejemplo && ejemplos[ejemplo.id]
@@ -80,7 +78,6 @@ export function PanelView({
             titulo: ejemplo.titulo,
             cliente: ejemplo.cliente,
             resumen: ejemplo.resumen,
-            pendientes: [],
             confirmacion: ejemplos[ejemplo.id],
           }
         : null
@@ -109,7 +106,6 @@ export function PanelView({
       resumen: ejemplo.resumen,
       servicios: ejemplo.servicios.map((id) => ({ id })),
       paginas: ejemplo.paginas,
-      pendientes: [],
     })
     setDescargando(false)
     if (r.ok) guardar(r.blob, `${r.numero}.pdf`)
@@ -253,16 +249,6 @@ export function PanelView({
                 />
               </div>
             </Caja>
-
-            {vista.pendientes.length > 0 && (
-              <Aviso tipo="aviso" titulo="Pendientes de aclarar">
-                <ul className="list-disc space-y-1 pl-4">
-                  {vista.pendientes.map((p) => (
-                    <li key={p}>{p}</li>
-                  ))}
-                </ul>
-              </Aviso>
-            )}
           </div>
         </div>
       )}
