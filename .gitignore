@@ -1,17 +1,20 @@
-# Dependencias (se instalan con npm install)
+# Dependencias
 node_modules/
 
-# Variables de entorno y credenciales
+# Variables de entorno y credenciales (el ejemplo sí se versiona)
 .env
 .env.*
+!.env.example
 
 # Builds y cachés
 .next/
 out/
 dist/
 build/
+coverage/
 *.tsbuildinfo
 next-env.d.ts
+.vercel
 
 # Logs
 npm-debug.log*
@@ -21,6 +24,7 @@ yarn-error.log*
 # Sistema / editor
 .DS_Store
 Thumbs.db
+*.pem
 
-# Plantilla original (se sustituyó por frontend/)
+# Plantilla original (se sustituyó)
 suerte/

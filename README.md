@@ -23,20 +23,16 @@ API REST hecha con **Node.js, Express y JavaScript** que recibe las característ
 
 ```
 proyecto_miweb/
-├── README.md
-├── backend/                  ← API (Node.js + Express + JavaScript)
-│   ├── package.json          ← dependencias (express) y scripts start / dev / test
-│   ├── package-lock.json
-│   ├── pruebas.http          ← peticiones listas para la extensión REST Client de VS Code
-│   ├── src/
-│   │   ├── server.js         ← arranca el servidor (puerto 3000)
-│   │   ├── app.js            ← app Express: rutas y manejo de errores
-│   │   ├── tarifas.js        ← tarifas oficiales (congeladas con Object.freeze)
-│   │   ├── validacion.js     ← validarSolicitud(): comprueba los datos
-│   │   └── presupuesto.js    ← calcularPresupuesto(): función de cálculo independiente
-│   └── test/
-│       └── api.test.js       ← pruebas automáticas (node:test, sin dependencias extra)
-└── frontend/                 ← interfaz React (Next.js + shadcn/ui), consume la API
+├── app/ components/ lib/ public/   ← interfaz (Next.js + Tailwind + shadcn/ui)
+├── server/                         ← API (Node.js + Express + JavaScript)
+│   ├── server.js                   ← arranque SOLO local (puerto 3000)
+│   ├── app.js                      ← app Express: rutas y manejo de errores
+│   ├── tarifas.js · validacion.js · presupuesto.js
+│   ├── pruebas.http                ← peticiones para REST Client de VS Code
+│   └── test/api.test.js            ← pruebas automáticas (node:test)
+├── api/index.js                    ← función de Vercel: `export default app`
+├── vercel.json                     ← rewrite /api/* → función y maxDuration
+├── .env.example · package.json     ← un único proyecto
 ```
 
 La API está separada en capas: **tarifas** (datos), **validación**, **cálculo** (función pura que no conoce Express) y **rutas** (`app.js`, que solo coordina).
@@ -49,9 +45,8 @@ La API está separada en capas: **tarifas** (datos), **validación**, **cálculo
 ## 3. Instalación y ejecución de la API (backend)
 
 ```bash
-cd backend
-npm install      # instala Express a partir de package.json / package-lock.json
-npm start        # arranca la API
+npm install      # instala todo (raíz del repo)
+npm run dev      # API en :3000 + interfaz en :3001
 ```
 
 Salida esperada:
@@ -162,11 +157,11 @@ Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/presupuesto -Conte
 curl.exe -X POST http://localhost:3000/api/presupuesto -H "Content-Type: application/json" -d '{\"tipo\":\"landing\",\"paginas\":0,\"formulario\":false,\"segundoIdioma\":false}'
 ```
 
-**VS Code:** abrir [backend/pruebas.http](backend/pruebas.http) con la extensión *REST Client* y pulsar *Send Request* encima de cada caso.
+**VS Code:** abrir [server/pruebas.http](server/pruebas.http) con la extensión *REST Client* y pulsar *Send Request* encima de cada caso.
 
 ## 5. Validación
 
-La hace [backend/src/validacion.js](backend/src/validacion.js) **antes** de calcular nada. Si algo falla, la API responde **400** con un mensaje por cada error y **no calcula** el presupuesto.
+La hace [server/validacion.js](server/validacion.js) **antes** de calcular nada. Si algo falla, la API responde **400** con un mensaje por cada error y **no calcula** el presupuesto.
 
 | Comprobación | Cómo se hace | Ejemplo rechazado |
 |---|---|---|
@@ -184,7 +179,7 @@ La hace [backend/src/validacion.js](backend/src/validacion.js) **antes** de calc
 
 ## 6. Cálculo del presupuesto
 
-La función [`calcularPresupuesto()`](backend/src/presupuesto.js) es **independiente del manejador de la ruta**: no recibe `req` ni `res`, solo los datos ya validados, y todos los precios los saca de `TARIFAS`.
+La función [`calcularPresupuesto()`](server/presupuesto.js) es **independiente del manejador de la ruta**: no recibe `req` ni `res`, solo los datos ya validados, y todos los precios los saca de `TARIFAS`.
 
 ```
 Total = precio base + páginas adicionales + extras seleccionados
@@ -252,10 +247,9 @@ Pruebas hechas con `curl` contra la API arrancada (`npm start`). En los casos in
 
 ### 7.2 Pruebas automáticas
 
-Las mismas pruebas, y algunas más, están automatizadas en [backend/test/api.test.js](backend/test/api.test.js) con el test runner nativo de Node. No hace falta arrancar la API: el test la levanta en un puerto libre.
+Las mismas pruebas, y algunas más, están automatizadas en [server/test/api.test.js](server/test/api.test.js) con el test runner nativo de Node. No hace falta arrancar la API: el test la levanta en un puerto libre.
 
 ```bash
-cd backend
 npm test
 ```
 
@@ -310,11 +304,10 @@ Cómo trabaja con la API:
 **Ejecución** (con la API ya arrancada en otra terminal):
 
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
 
 Abrir **http://localhost:3001**.
 
-El frontend usa el puerto **3001** porque el 3000 es de la API. Next.js reenvía las peticiones `/api/*` a `http://localhost:3000` (rewrites en [frontend/next.config.ts](frontend/next.config.ts)), así que no hace falta CORS. Si la API está en otra URL: `API_URL=http://localhost:4000 npm run dev`.
+El frontend usa el puerto **3001** porque el 3000 es de la API. Next.js reenvía las peticiones `/api/*` a `http://localhost:3000` (rewrites en [next.config.ts](next.config.ts)), así que no hace falta CORS. Si la API está en otra URL: `API_URL=http://localhost:4000 npm run dev`.

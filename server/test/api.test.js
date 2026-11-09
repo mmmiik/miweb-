@@ -2,8 +2,8 @@
 // Ejecutar con: npm test
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { app } from '../src/app.js';
-import { calcularPresupuesto } from '../src/presupuesto.js';
+import { app } from '../app.js';
+import { calcularPresupuesto } from '../presupuesto.js';
 
 let servidor;
 let URL_BASE;
