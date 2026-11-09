@@ -1,9 +1,47 @@
 "use client"
 
+import * as React from "react"
+import dynamic from "next/dynamic"
+import { useTheme } from "next-themes"
 import { ArrowDownIcon, ArrowRightIcon, ChartBarIcon } from "@phosphor-icons/react"
 
 import { Escalera } from "@/components/escalera"
 import { Button } from "@/components/ui/button"
+
+// WebGL: solo se carga en el navegador.
+const Prism = dynamic(() => import("@/components/Prism"), { ssr: false })
+
+const subscribe = () => () => {}
+
+/** Prisma 3D que gira despacio tras el titular, en azules del acento. No sigue al ratón. */
+function Prisma() {
+  const { resolvedTheme } = useTheme()
+  const cliente = React.useSyncExternalStore(subscribe, () => true, () => false)
+  const claro = resolvedTheme !== "dark"
+  if (!cliente) return null
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-x-0 -top-10 -bottom-10 -z-10 animate-in fade-in-0 duration-1000 opacity-80 [mask-image:radial-gradient(ellipse_at_50%_35%,black_40%,transparent_75%)]"
+    >
+      <Prism
+        key={claro ? "claro" : "oscuro"}
+        lightMode={claro}
+        animationType="rotate"
+        colors={["#3b82f6", "#60a5fa", "#38bdf8", "#818cf8"]}
+        glow={claro ? 0.55 : 0.6}
+        scale={5.6}
+        offset={{ x: 0, y: -90 }}
+        height={3.5}
+        baseWidth={5.5}
+        timeScale={0.35}
+        saturation={1.3}
+        interactive={false}
+        intro={false}
+      />
+    </div>
+  )
+}
 
 /**
  * Portada. El hero no lleva fondo propio: el fondo de toda la página es la rejilla de ondas
@@ -23,7 +61,9 @@ export function Portada({
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-24 sm:space-y-32">
-      <section className="relative flex min-h-[calc(100svh-9rem)] flex-col items-center justify-center gap-7 py-10 text-center">
+      <section className="relative isolate flex min-h-[calc(100svh-9rem)] flex-col items-center justify-center gap-7 py-10 text-center">
+        <Prisma />
+
         <h1 className="flex flex-col items-center leading-[0.9] tracking-tighter">
           <span
             style={{ animationDelay: "100ms" }}
