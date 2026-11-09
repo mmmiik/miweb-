@@ -6,6 +6,7 @@ import { catalogoPublico } from './catalogo.js';
 import { proponerServicios } from './ia/proponer.js';
 import { ErrorIA } from './ia/errores.js';
 import { generarPdf } from './pdf/generar.js';
+import { crearLimite } from './limite.js';
 
 function exigirJson(req, res, next) {
   if (!req.is('application/json')) {
@@ -21,8 +22,11 @@ function exigirJson(req, res, next) {
  * Crea la app Express. Los tests pasan un cliente de OpenAI falso (`clienteIA`)
  * o un `timeoutIA` corto; en producción no se pasa nada y se usa el cliente real.
  */
-export function crearApp({ clienteIA, timeoutIA } = {}) {
+export function crearApp({ clienteIA, timeoutIA, limitePropuestas } = {}) {
   const app = express();
+  // Detrás del proxy de Vercel la IP real viene en X-Forwarded-For (un solo salto).
+  app.set('trust proxy', 1);
+  const limite = crearLimite(limitePropuestas);
 
   // Solo interpreta cuerpos con Content-Type: application/json.
   app.use(express.json());
@@ -96,11 +100,19 @@ export function crearApp({ clienteIA, timeoutIA } = {}) {
   });
 
   // POST /api/propuesta → la IA propone servicios del catálogo (sin importes).
-  // 400 entrada inválida · 502 fallo de OpenAI · 504 timeout.
+  // 400 entrada inválida · 429 demasiadas solicitudes · 502 fallo de OpenAI · 504 timeout.
   app.post('/api/propuesta', exigirJson, async (req, res, next) => {
     const resultado = validarPropuesta(req.body);
     if (!resultado.ok) {
       return res.status(400).json({ error: 'Solicitud no válida', detalles: resultado.errores });
+    }
+    // Solo cuentan las solicitudes válidas: son las que llegan a OpenAI y cuestan dinero.
+    const permitido = limite(req.ip);
+    if (!permitido.ok) {
+      res.set('Retry-After', String(permitido.reintentarEnSeg));
+      return res.status(429).json({
+        error: `Demasiadas solicitudes. Inténtalo de nuevo en ${Math.ceil(permitido.reintentarEnSeg / 60)} min.`,
+      });
     }
     try {
       const propuesta = await proponerServicios(resultado.datos.descripcion, {

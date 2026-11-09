@@ -325,3 +325,33 @@ test('Sin OPENAI_API_KEY ni cliente inyectado → 502 claro, nunca una respuesta
     if (guardada !== undefined) process.env.OPENAI_API_KEY = guardada;
   }
 });
+
+// ---------- Límite por IP (protege el gasto en OpenAI) ----------
+
+test('Límite por IP · tras el máximo, 429 con Retry-After y sin llamar a OpenAI; otra IP no se ve afectada', async () => {
+  const cliente = clienteFalso(() => respuestaModelo({ resumen: 'x', servicios: [], pendientes: [] }));
+  await conServidor({ clienteIA: cliente, limitePropuestas: { max: 2, ventanaMs: 60_000 } }, async ({ base }) => {
+    const pedir = (ip) =>
+      fetch(`${base}/api/propuesta`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip },
+        body: JSON.stringify({ cliente: CLIENTE, descripcion: 'Una web.' }),
+      });
+    assert.equal((await pedir('10.0.0.1')).status, 200);
+    assert.equal((await pedir('10.0.0.1')).status, 200);
+    const bloqueada = await pedir('10.0.0.1');
+    assert.equal(bloqueada.status, 429);
+    assert.ok(Number(bloqueada.headers.get('retry-after')) > 0);
+    assert.match((await bloqueada.json()).error, /Demasiadas solicitudes/);
+    assert.equal(cliente.llamadas.length, 2); // la tercera NO llegó a OpenAI
+    assert.equal((await pedir('10.0.0.2')).status, 200); // otra IP, otro contador
+  });
+});
+
+test('Límite por IP · las solicitudes inválidas no consumen cupo', async () => {
+  const cliente = clienteFalso(() => respuestaModelo({ resumen: 'x', servicios: [], pendientes: [] }));
+  await conServidor({ clienteIA: cliente, limitePropuestas: { max: 1, ventanaMs: 60_000 } }, async ({ post }) => {
+    for (let i = 0; i < 3; i++) assert.equal((await post('/api/propuesta', { cliente: CLIENTE, descripcion: '' })).status, 400);
+    assert.equal((await post('/api/propuesta', { cliente: CLIENTE, descripcion: 'Una web.' })).status, 200);
+  });
+});

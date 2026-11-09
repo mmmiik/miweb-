@@ -74,3 +74,40 @@ POST {{url}}/api/presupuesto
 Content-Type: application/json
 
 { "tipo": "landing", "paginas": 1, "formulario": false, "segundoIdioma": false, "total": 1 }
+
+### ---------- Presupuesta mi web 2 ----------
+
+### Catálogo de servicios
+GET {{url}}/api/catalogo
+
+### Propuesta de la IA (usa la API de OpenAI: gasta unos céntimos)
+POST {{url}}/api/propuesta
+Content-Type: application/json
+
+{
+  "cliente": "Restaurante La Cepa (ficticio)",
+  "descripcion": "Somos un restaurante y queremos una web con nuestra carta, reservas y versión en inglés."
+}
+
+### Confirmar una selección de servicios: 830 €
+POST {{url}}/api/presupuesto/confirmar
+Content-Type: application/json
+
+{ "servicios": [{ "id": "corporativa" }, { "id": "paginasAdicionales" }, { "id": "formulario" }], "paginas": 4 }
+
+### Dos servicios base a la vez → 400
+POST {{url}}/api/presupuesto/confirmar
+Content-Type: application/json
+
+{ "servicios": [{ "id": "landing" }, { "id": "corporativa" }] }
+
+### PDF del presupuesto (los importes se recalculan en el servidor)
+POST {{url}}/api/presupuesto/pdf
+Content-Type: application/json
+
+{
+  "cliente": "Restaurante La Cepa (ficticio)",
+  "resumen": "Web con carta, reservas y dos idiomas.",
+  "servicios": [{ "id": "corporativa" }, { "id": "formulario" }],
+  "pendientes": ["¿Quiere pago online? Pendiente de valorar."]
+}
