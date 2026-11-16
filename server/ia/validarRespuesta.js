@@ -1,6 +1,7 @@
 // Segunda validación, con código propio: del modelo no se acepta nada sin comprobar,
 // aunque el esquema estricto ya lo garantice.
 import { obtenerServicio } from '../catalogo.js';
+import { PAGINAS_MIN, PAGINAS_MAX } from '../tarifas.js';
 import { ErrorIA } from './errores.js';
 
 const MAX_RESUMEN = 600;
@@ -30,7 +31,7 @@ function limpiarTexto(valor, max) {
 
 /**
  * @param {string} texto - salida de texto del modelo (JSON)
- * @returns {{ resumen: string, servicios: {id: string, justificacion: string}[], pendientes: string[], avisos: string[] }}
+ * @returns {{ resumen: string, servicios: {id: string, justificacion: string}[], paginas: number | null, pendientes: string[], avisos: string[] }}
  * @throws {ErrorIA} 502 si la respuesta no es utilizable
  */
 export function validarRespuestaModelo(texto) {
@@ -77,6 +78,21 @@ export function validarRespuestaModelo(texto) {
     servicios.push({ id, justificacion: j.texto || 'Servicio del catálogo que encaja con lo que describes.' });
   }
 
+  // Páginas: solo un entero que diga el cliente. Por encima del máximo se ajusta con aviso;
+  // 1 página (o nada) → null, porque no hay páginas adicionales que preseleccionar.
+  let paginas = null;
+  if (Number.isInteger(datos.paginas) && datos.paginas > PAGINAS_MIN) {
+    paginas = datos.paginas;
+    if (paginas > PAGINAS_MAX) {
+      avisos.push(`El cliente pide ${paginas} páginas; el catálogo admite como máximo ${PAGINAS_MAX} y se ha ajustado. Revísalo.`);
+      paginas = PAGINAS_MAX;
+    }
+    if (!vistos.has('paginasAdicionales')) {
+      servicios.push({ id: 'paginasAdicionales', justificacion: `El cliente indica ${paginas} páginas en total.` });
+      vistos.add('paginasAdicionales');
+    }
+  }
+
   // Pendientes
   const pendientes = [];
   if (Array.isArray(datos.pendientes)) {
@@ -89,5 +105,5 @@ export function validarRespuestaModelo(texto) {
     }
   }
 
-  return { resumen, servicios, pendientes, avisos };
+  return { resumen, servicios, paginas, pendientes, avisos };
 }

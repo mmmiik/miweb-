@@ -66,7 +66,7 @@ export async function proponerServicios(descripcion, { cliente, modelo, timeoutM
     throw new ErrorIA(502, 'La IA devolvió una respuesta vacía.');
   }
 
-  const { resumen, servicios, pendientes, avisos } = validarRespuestaModelo(respuesta.output_text);
+  const { resumen, servicios, paginas, pendientes, avisos } = validarRespuestaModelo(respuesta.output_text);
 
   return {
     resumen,
@@ -80,6 +80,8 @@ export async function proponerServicios(descripcion, { cliente, modelo, timeoutM
         parametros: def.parametros.map((p) => ({ ...p })),
       };
     }),
+    // Total de páginas que indicó el cliente (o el máximo de su rango); null si no lo dijo.
+    paginas,
     pendientes,
     avisos,
   };

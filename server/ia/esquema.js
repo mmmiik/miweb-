@@ -10,7 +10,7 @@ export function formatoSalida() {
     schema: {
       type: 'object',
       additionalProperties: false,
-      required: ['resumen', 'servicios', 'pendientes'],
+      required: ['resumen', 'servicios', 'paginas', 'pendientes'],
       properties: {
         resumen: { type: 'string' },
         servicios: {
@@ -25,6 +25,8 @@ export function formatoSalida() {
             },
           },
         },
+        // Total de páginas que indica el cliente (exacto o el máximo de un rango); null si no lo dice.
+        paginas: { type: ['integer', 'null'] },
         pendientes: { type: 'array', items: { type: 'string' } },
       },
     },

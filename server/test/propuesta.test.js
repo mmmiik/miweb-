@@ -116,6 +116,67 @@ test('Una descripción que intenta cerrar la etiqueta no puede salirse de la del
   });
 });
 
+// ---------- Número de páginas indicado por el cliente ----------
+
+async function paginasPropuestas(respuesta) {
+  let cuerpo;
+  await conServidor({ clienteIA: clienteFalso(() => respuestaModelo(respuesta)) }, async ({ post }) => {
+    const res = await post('/api/propuesta', { cliente: CLIENTE, descripcion: 'Una web de varias páginas.' });
+    assert.equal(res.status, 200);
+    cuerpo = await res.json();
+  });
+  return cuerpo;
+}
+
+test('Páginas · número exacto o máximo de un rango → llega en "paginas"', async () => {
+  const cuerpo = await paginasPropuestas({
+    resumen: 'Web corporativa de entre 10 y 15 páginas.',
+    servicios: [
+      { id: 'corporativa', justificacion: 'Varias secciones.' },
+      { id: 'paginasAdicionales', justificacion: 'Pide entre 10 y 15 páginas.' },
+    ],
+    paginas: 15,
+    pendientes: [],
+  });
+  assert.equal(cuerpo.paginas, 15);
+  assert.deepEqual(cuerpo.avisos, []);
+});
+
+test('Páginas · sin número → null; 1 página o valores no enteros → null', async () => {
+  for (const paginas of [null, 1, 0, -3, 4.5, '6']) {
+    const cuerpo = await paginasPropuestas({
+      resumen: 'x',
+      servicios: [{ id: 'landing', justificacion: 'Una página.' }],
+      paginas,
+      pendientes: [],
+    });
+    assert.equal(cuerpo.paginas, null, `paginas: ${JSON.stringify(paginas)}`);
+    assert.deepEqual(cuerpo.servicios.map((s) => s.id), ['landing']);
+  }
+});
+
+test('Páginas · más de 20 → se ajusta a 20 con aviso', async () => {
+  const cuerpo = await paginasPropuestas({
+    resumen: 'x',
+    servicios: [{ id: 'corporativa', justificacion: 'x' }, { id: 'paginasAdicionales', justificacion: 'x' }],
+    paginas: 30,
+    pendientes: [],
+  });
+  assert.equal(cuerpo.paginas, 20);
+  assert.match(cuerpo.avisos.join(' '), /máximo 20/);
+});
+
+test('Páginas · número sin el servicio de páginas adicionales → se añade', async () => {
+  const cuerpo = await paginasPropuestas({
+    resumen: 'x',
+    servicios: [{ id: 'corporativa', justificacion: 'x' }],
+    paginas: 5,
+    pendientes: [],
+  });
+  assert.equal(cuerpo.paginas, 5);
+  assert.deepEqual(cuerpo.servicios.map((s) => s.id), ['corporativa', 'paginasAdicionales']);
+});
+
 // ---------- Escenario 2 · ambigua ----------
 
 test('Escenario 2 · descripción ambigua → dudas en "pendientes"', async () => {

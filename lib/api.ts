@@ -80,6 +80,8 @@ export interface Propuesta {
   cliente: string
   resumen: string
   servicios: ServicioPropuesto[]
+  /** Total de páginas que indicó el cliente (o el máximo de su rango); null si no lo dijo. */
+  paginas: number | null
   pendientes: string[]
   avisos: string[]
 }

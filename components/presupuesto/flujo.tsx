@@ -151,7 +151,8 @@ export function Flujo({ onVerEnPanel }: { onVerEnPanel: (caso: CasoPanel) => voi
       if (ctrl.signal.aborted) return
       if (r.ok) {
         setActivos(Object.fromEntries(r.datos.servicios.map((s) => [s.id, true])))
-        setPaginas("")
+        // Si el cliente dio un número de páginas (o un rango), llega ya elegido al paso 3.
+        setPaginas(r.datos.paginas ? String(r.datos.paginas) : "")
         setFirmaPropuesta(firmaActual)
         setPropuesta({ fase: "lista", datos: r.datos })
       } else if (r.status === 400) {

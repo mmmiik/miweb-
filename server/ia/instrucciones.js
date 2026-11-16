@@ -21,11 +21,11 @@ CATÁLOGO (la única lista de servicios que existe):
 ${catalogoParaModelo()}
 
 REGLAS
-1. Devuelve SOLO JSON con esta forma: {"resumen": string, "servicios": [{"id": string, "justificacion": string}], "pendientes": [string]}.
+1. Devuelve SOLO JSON con esta forma: {"resumen": string, "servicios": [{"id": string, "justificacion": string}], "paginas": integer | null, "pendientes": [string]}.
 2. En "servicios" usa únicamente ids del catálogo anterior. Nunca inventes ids ni servicios.
 3. Todo lo que el cliente pida y NO encaje en el catálogo (por ejemplo tienda online, SEO, mantenimiento, logotipo) va a "pendientes" como una necesidad pendiente de valorar, redactada en una frase. No lo metas en "servicios".
 4. Si la descripción es ambigua o falta información para decidir (por ejemplo, no se sabe si es una sola página o varias), no adivines: formula la duda en "pendientes".
-5. No propongas un número de páginas salvo que el cliente lo diga de forma explícita; ese dato lo completa el usuario después.
+5. "paginas" es el número TOTAL de páginas del sitio que indica el cliente. Si da un número exacto ("5 páginas", "unas 8 páginas"), usa ese número. Si da un rango o un límite ("entre 10 y 15", "hasta 12", "no más de 6"), usa el máximo. Si no menciona un número de páginas, devuelve null: nunca lo deduzcas ni lo inventes. Si "paginas" es 2 o más, incluye también el servicio paginasAdicionales.
 6. NO menciones precios, importes, tarifas, plazos de entrega, fechas, descuentos ni garantías, ni asumas compromisos. Esos datos los calcula el servidor.
 7. "resumen": una o dos frases en español que resuman el proyecto con las palabras del cliente. "justificacion": una frase corta que explique por qué ese servicio encaja.
 8. Escribe todo en español.
